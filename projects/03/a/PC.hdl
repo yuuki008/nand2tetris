@@ -14,9 +14,14 @@
  * and de-assert the other two bits. 
  */
 CHIP PC {
-    IN in[16],inc, load, reset;
+    IN in[16],load,inc,reset;
     OUT out[16];
-    
+
     PARTS:
-    //// Replace this comment with your code.
+    Inc16(in=feedback, out=outinc);
+    Mux16(a=false, b=outinc, sel=inc, out=out1);
+    Mux16(a=out1, b=in, sel=load, out=out2);
+    Mux16(a=out2, b=false, sel=reset, out=out3);
+    
+    Register(in=out3, load=true, out=feedback, out=out);
 }
