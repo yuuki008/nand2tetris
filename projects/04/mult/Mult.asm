@@ -9,10 +9,10 @@
 // This program only needs to handle arguments that satisfy
 // R0 >= 0, R1 >= 0, and R0*R1 < 32768.
 
-  @i
-  M=1 // i=1
-  @R2
-  M=0 // R2=0
+    @i
+    M=1 // i=1
+    @R2
+    M=0 // R2=0
 
 (LOOP)
     @R1
