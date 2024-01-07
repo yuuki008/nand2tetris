@@ -32,5 +32,36 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    //// Replace this comment with your code.
+    Mux16(a=instruction, b=aluOut, sel=instruction[0], out=aluM) // Aレジスタの値をMuxで選択
+    Not(in=aluM[0], out=aLoad) // Aレジスタにロードするかどうかの変数
+    ARegister(in=aluM, load=aLoad, out=aRegsiterOut) // Aレジスタの更新
+
+    DRegister(in=aluOut, load=dLoad, out=dRegisterOut) // Dレジスタの更新
+    Mux16(a=aResisterOut, b=inM, sel=instruction[0], out=aluA)
+    ALU(
+        x=aluA,
+        y=dResisterOut, 
+        zx=instruction[4], 
+        nx=instruction[5], 
+        zy=instruction[6], 
+        ny=instruction[7], 
+        f=instruction[8], 
+        no=instruction[9], 
+        out=outM,
+        out=aluOut
+        zr=aluOutZero, 
+        ng=aluOutNegative
+    );
+
+
+    
+    And(a=instruction[13], b=aluOutNegative, out=ngLoad);
+    And(a=instruction[14], b=aluOutZero, out=zrLoad);
+    Or(a=ngAnd, b=zrAnd, out=ngOrzr);
+    Not(in=ngOrzr, out=ngOrzrNot);
+    And(a=instruction[15], b=ngOrzrNot, out=psLoad);
+    Or(a=ngOrZr, b=psLoad, out=pcLoad);
+    
+    Not(in=pcLoad, out=pcInc)
+    PC(in=aResisterOut, load=pcLoad, inc=pcInc, reset=reset, out=pc[1..15])
 }
