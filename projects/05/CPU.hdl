@@ -32,15 +32,17 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    Mux16(a=instruction, b=aluOut, sel=instruction[0], out=aluM) // Aレジスタの値をMuxで選択
-    Not(in=aluM[0], out=aLoad) // Aレジスタにロードするかどうかの変数
-    ARegister(in=aluM, load=aLoad, out=aRegsiterOut) // Aレジスタの更新
+    And(a=instruction[0], b=instruction[10], out=aluOutToA)
+    Mux16(a=instruction, b=aluOut, sel=aluOutToA, out=aluM)
+    Not(in=instruction[0], out=isA)
+    Or(a=aluOutToA, b=isA, out=aLoad)
+    ARegister(in=aluM, load=aLoad, out=A, out=addressM)
 
-    DRegister(in=aluOut, load=dLoad, out=dRegisterOut) // Dレジスタの更新
-    Mux16(a=aResisterOut, b=inM, sel=instruction[0], out=aluA)
+    DRegister(in=aluOut, load=instruction[11], out=D)
+    Mux16(a=A, b=inM, sel=instruction[3], out=AM)
     ALU(
-        x=aluA,
-        y=dResisterOut, 
+        x=D,
+        y=AM,
         zx=instruction[4], 
         nx=instruction[5], 
         zy=instruction[6], 
@@ -53,8 +55,11 @@ CHIP CPU {
         ng=aluOutNegative
     );
 
+    // メモリへの書き込みを有無を決定
+    And(a=instruction[12], b=instruction[12], out=writeM);
 
-    
+
+    // ジャンプの有無を決定
     And(a=instruction[13], b=aluOutNegative, out=ngLoad);
     And(a=instruction[14], b=aluOutZero, out=zrLoad);
     Or(a=ngAnd, b=zrAnd, out=ngOrzr);
@@ -62,6 +67,9 @@ CHIP CPU {
     And(a=instruction[15], b=ngOrzrNot, out=psLoad);
     Or(a=ngOrZr, b=psLoad, out=pcLoad);
     
+    // PCのインクリメントを決定
     Not(in=pcLoad, out=pcInc)
-    PC(in=aResisterOut, load=pcLoad, inc=pcInc, reset=reset, out=pc[1..15])
+
+    // PCのセット
+    PC(in=A, load=pcLoad, inc=pcInc, reset=reset, out=pc[1..15])
 }
