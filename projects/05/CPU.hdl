@@ -32,44 +32,46 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    And(a=instruction[0], b=instruction[10], out=aluOutToA)
-    Mux16(a=instruction, b=aluOut, sel=aluOutToA, out=aluM)
-    Not(in=instruction[0], out=isA)
-    Or(a=aluOutToA, b=isA, out=aLoad)
-    ARegister(in=aluM, load=aLoad, out=A, out=addressM)
+    And(a=instruction[15], b=instruction[5], out=aluOutToA);
+    Mux16(a=instruction, b=aluOut, sel=aluOutToA, out=aluM);
+    Not(in=instruction[15], out=isA);
+    Or(a=aluOutToA, b=isA, out=aLoad);
+    ARegister(in=aluM, load=aLoad, out=A, out[0..14]=addressM);
 
-    DRegister(in=aluOut, load=instruction[11], out=D)
-    Mux16(a=A, b=inM, sel=instruction[3], out=AM)
+    And(a=instruction[15], b=instruction[4], out=dLoad);
+    DRegister(in=aluOut, load=dLoad, out=D);
+    Mux16(a=A, b=inM, sel=instruction[12], out=AM);
     ALU(
         x=D,
         y=AM,
-        zx=instruction[4], 
-        nx=instruction[5], 
-        zy=instruction[6], 
-        ny=instruction[7], 
-        f=instruction[8], 
-        no=instruction[9], 
+        zx=instruction[11], 
+        nx=instruction[10], 
+        zy=instruction[9], 
+        ny=instruction[8], 
+        f=instruction[7], 
+        no=instruction[6], 
         out=outM,
-        out=aluOut
+        out=aluOut,
         zr=aluOutZero, 
         ng=aluOutNegative
     );
 
     // メモリへの書き込みを有無を決定
-    And(a=instruction[12], b=instruction[12], out=writeM);
+    And(a=instruction[15], b=instruction[3], out=writeM);
 
 
     // ジャンプの有無を決定
-    And(a=instruction[13], b=aluOutNegative, out=ngLoad);
-    And(a=instruction[14], b=aluOutZero, out=zrLoad);
-    Or(a=ngAnd, b=zrAnd, out=ngOrzr);
-    Not(in=ngOrzr, out=ngOrzrNot);
-    And(a=instruction[15], b=ngOrzrNot, out=psLoad);
-    Or(a=ngOrZr, b=psLoad, out=pcLoad);
-    
-    // PCのインクリメントを決定
-    Not(in=pcLoad, out=pcInc)
+    And(a=instruction[2], b=aluOutNegative, out=ngJump);
+    And(a=instruction[1], b=aluOutZero, out=zrJump);
+    Or(a=ngJump, b=zrJump, out=ngOrZrJump);
+
+    Or(a=aluOutNegative, b=aluOutZero, out=isNegativeOrZero);
+    Not(in=isNegativeOrZero, out=isPositive);
+    And(a=isPositive, b=instruction[0], out=psJump);
+
+    Or(a=ngOrZrJump, b=psJump, out=isJump);
+    And(a=instruction[15], b=isJump, out=pcLoad);
 
     // PCのセット
-    PC(in=A, load=pcLoad, inc=pcInc, reset=reset, out=pc[1..15])
+    PC(in=A, load=pcLoad, inc=true, reset=reset, out[0..14]=pc);
 }
