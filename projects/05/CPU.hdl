@@ -32,15 +32,15 @@ CHIP CPU {
         pc[15];          // Address of next instruction
 
     PARTS:
-    And(a=instruction[15], b=instruction[5], out=aluOutToA);
-    Mux16(a=instruction, b=aluOut, sel=aluOutToA, out=aluM);
-    Not(in=instruction[15], out=isA);
-    Or(a=aluOutToA, b=isA, out=aLoad);
-    ARegister(in=aluM, load=aLoad, out=A, out[0..14]=addressM);
+    And(a=instruction[15], b=instruction[5], out=aluOutToA); // C 命令かつ A レジスタへのロードの場合に 1 
+    Mux16(a=instruction, b=aluOut, sel=aluOutToA, out=aluM); // A レジスタへロードする値
+    Not(in=instruction[15], out=isA); // A 命令の場合に 1
+    Or(a=aluOutToA, b=isA, out=aLoad); // A レジスタへロードする場合に 1
+    ARegister(in=aluM, load=aLoad, out=A, out[0..14]=addressM); // A レジスタにロード
 
-    And(a=instruction[15], b=instruction[4], out=dLoad);
-    DRegister(in=aluOut, load=dLoad, out=D);
-    Mux16(a=A, b=inM, sel=instruction[12], out=AM);
+    And(a=instruction[15], b=instruction[4], out=dLoad);  // C 命令かつ D レジスタへへのロードの場合に 1
+    DRegister(in=aluOut, load=dLoad, out=D); // D レジスタにロード
+    Mux16(a=A, b=inM, sel=instruction[12], out=AM); // A レジスタの値か inM の値を選択
     ALU(
         x=D,
         y=AM,
@@ -54,7 +54,7 @@ CHIP CPU {
         out=aluOut,
         zr=aluOutZero, 
         ng=aluOutNegative
-    );
+    ); // ALU による計算
 
     // メモリへの書き込みを有無を決定
     And(a=instruction[15], b=instruction[3], out=writeM);
