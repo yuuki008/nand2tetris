@@ -3,7 +3,7 @@ require_relative './code.rb'
 class Parser
   def initialize(file_path)
     lines = file_readlines(file_path)
-    @commands = lines.reject { |line| line.start_with?("//") || line.strip.empty? }
+    @commands = lines.reject { |line| line.include?("//") || line.strip.empty? }
     @index = 0
   end
 
@@ -39,7 +39,7 @@ class Parser
   end
 
   def symbol
-    @commands[@index].gsub(/[@\(\)]/, "")
+    @commands[@index].gsub(/[@\(\)]/, "").strip
   end
 
   private 
