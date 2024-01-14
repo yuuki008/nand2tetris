@@ -19,8 +19,8 @@ class Assembler
         case parser.command_type
         when "A_COMMAND"
           hack_file.puts "#{parser.symbol.to_i.to_s(2).rjust(16, "0")}"
-        when 'L_COMMAND'
-          hack_file.puts "111#{parser.comp}#{parser.dest}#{parser.jump}"
+        when 'C_COMMAND'
+          hack_file.puts "111#{code.comp(parser.comp)}#{code.dest(parser.dest)}#{code.jump(parser.jump)}"
         end
 
         parser.advance

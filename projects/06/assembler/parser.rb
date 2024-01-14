@@ -16,27 +16,16 @@ class Parser
   end
 
   def dest
-    if command_type == "C_COMMAND"
-      return @commands[@index].split("=")[0]
-    else
-      return ""
-    end
+    @commands[@index].include?("=")  ? @commands[@index].split("=")[0] : ""
   end
 
   def comp
-    if command_type === "C_COMMAND"
-      return @commands[@index].split("=")[1].split(";")[0]
-    else
-      return ""
-    end
+    command = @commands[@index].include?("=") ? @commands[@index].split("=")[1] : @commands[@index]
+    command.split(";")[0].strip
   end
 
   def jump
-    if command_type == "C_COMMAND"
-      return @commands[@index].split(";")[1]
-    else
-      return ""
-    end
+    @commands[@index].include?(";") ? @commands[@index].split(";")[1].strip : ""
   end
 
   def command_type
