@@ -1,15 +1,52 @@
 require_relative './parser.rb'
 require_relative './code.rb'
+require_relative './symbol_table.rb'
 
 class Assembler
   def initialize
+  end
+
+  def first_path(symbol_table, file_path)
+    parser = Parser.new(file_path)
+
+    pc = 0
+    while parser.has_more_commands
+
+      if parser.command_type === "L_COMMAND"
+        symbol_table.add_entry(parser.symbol, pc)
+      end
+
+      pc += 1
+      parser.advance
+    end
+  end
+
+  def second_path(symbol_table, file_path)
+    parser = Parser.new(file_path)
+
+    while parser.has_more_commands
+      if parser.command_type === "A_COMMAND" && !parser.symbol.match?(/\A\d+\z/)
+        if !symbol_table.contains?(parser.symbol)
+          symbol_table.add_entry(parser.symbol, symbol_table.next_address)
+        end
+      end
+
+      parser.advance
+    end
   end
 
   def execute 
     print "アセンブリファイルのパスを入力してください: "
     input_file_path = gets.chomp
     output_file_path = input_file_path.gsub(/\.asm$/, ".hack")
-  
+
+    symbol_table = SymbolTable.new
+
+    first_path(symbol_table, input_file_path)
+    second_path(symbol_table, input_file_path)
+
+    puts symbol_table.table.inspect
+
     parser = Parser.new(input_file_path)
 
     File.open(output_file_path, "w") do |hack_file|
