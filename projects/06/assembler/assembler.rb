@@ -11,24 +11,10 @@ class Assembler
 
     pc = 0
     while parser.has_more_commands
-
       if parser.command_type === "L_COMMAND"
         symbol_table.add_entry(parser.symbol, pc)
-      end
-
-      pc += 1
-      parser.advance
-    end
-  end
-
-  def second_path(symbol_table, file_path)
-    parser = Parser.new(file_path)
-
-    while parser.has_more_commands
-      if parser.command_type === "A_COMMAND" && !parser.symbol.match?(/\A\d+\z/)
-        if !symbol_table.contains?(parser.symbol)
-          symbol_table.add_entry(parser.symbol, symbol_table.next_address)
-        end
+      else
+        pc += 1
       end
 
       parser.advance
@@ -43,19 +29,29 @@ class Assembler
     symbol_table = SymbolTable.new
 
     first_path(symbol_table, input_file_path)
-    second_path(symbol_table, input_file_path)
-
-    puts symbol_table.table.inspect
 
     parser = Parser.new(input_file_path)
 
     File.open(output_file_path, "w") do |hack_file|
       code = Code.new
 
-      while parser.has_more_commands
+      next_address = 16
+
+      while parser.has_more_commands    
         case parser.command_type
         when "A_COMMAND"
-          hack_file.puts "#{parser.symbol.to_i.to_s(2).rjust(16, "0")}"
+          address =  parser.symbol.to_i.to_s(2)
+
+          if !parser.symbol.match?(/\A\d+\z/)
+            if !symbol_table.contains?(parser.symbol)
+              symbol_table.add_entry(parser.symbol, next_address)
+              next_address += 1
+            end
+
+            address = symbol_table.get_address(parser.symbol).to_s(2)
+          end
+
+          hack_file.puts "#{address.rjust(16, "0")}"
         when 'C_COMMAND'
           hack_file.puts "111#{code.comp(parser.comp)}#{code.dest(parser.dest)}#{code.jump(parser.jump)}"
         end

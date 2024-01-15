@@ -16,7 +16,7 @@ class Parser
   end
 
   def dest
-    @commands[@index].include?("=")  ? @commands[@index].split("=")[0] : ""
+    @commands[@index].include?("=")  ? @commands[@index].split("=")[0].strip : ""
   end
 
   def comp
@@ -29,7 +29,7 @@ class Parser
   end
 
   def command_type
-    if @commands[@index].start_with?("@")
+    if @commands[@index].include?("@")
       return "A_COMMAND"
     elsif @commands[@index].include?("=") || @commands[@index].include?(";")
       return "C_COMMAND"
