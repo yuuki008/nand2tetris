@@ -3,16 +3,29 @@ require_relative './code.rb'
 require_relative './symbol_table.rb'
 
 class Assembler
-  def initialize
+  def initialize(file_path)
+    @symbol_table = SymbolTable.new
+    @file_path = file_path
+    @code = Code.new
   end
 
-  def first_path(symbol_table, file_path)
-    parser = Parser.new(file_path)
+  def execute 
+    first_path
+    second_path
+    compile
+
+    puts "Hackファイルへの出力が完了しました。"
+  end
+
+  private
+
+  def first_path
+    parser = Parser.new(@file_path)
 
     pc = 0
     while parser.has_more_commands
       if parser.command_type === "L_COMMAND"
-        symbol_table.add_entry(parser.symbol, pc)
+        @symbol_table.add_entry(parser.symbol, pc)
       else
         pc += 1
       end
@@ -21,66 +34,42 @@ class Assembler
     end
   end
 
-  def execute 
-    print "アセンブリファイルのパスを入力してください: "
-    input_file_path = gets.chomp
-    output_file_path = input_file_path.gsub(/\.asm$/, ".hack")
+  def second_path
+    parser = Parser.new(@file_path)
 
-    symbol_table = SymbolTable.new
+    next_address = 16
+    while parser.has_more_commands
+      next parser.advance if parser.command_type != "A_COMMAND" 
+      next parser.advance if parser.symbol.match?(/\A\d+\z/)
+      next parser.advance if @symbol_table.contains?(parser.symbol)
 
-    first_path(symbol_table, input_file_path)
+      @symbol_table.add_entry(parser.symbol, next_address)
+      next_address += 1
 
-    parser = Parser.new(input_file_path)
-
-    File.open(output_file_path, "w") do |hack_file|
-      code = Code.new
-
-      next_address = 16
-
-      while parser.has_more_commands    
-        case parser.command_type
-        when "A_COMMAND"
-          address =  parser.symbol.to_i.to_s(2)
-
-          if !parser.symbol.match?(/\A\d+\z/)
-            if !symbol_table.contains?(parser.symbol)
-              symbol_table.add_entry(parser.symbol, next_address)
-              next_address += 1
-            end
-
-            address = symbol_table.get_address(parser.symbol).to_s(2)
-          end
-
-          hack_file.puts "#{address.rjust(16, "0")}"
-        when 'C_COMMAND'
-          hack_file.puts "111#{code.comp(parser.comp)}#{code.dest(parser.dest)}#{code.jump(parser.jump)}"
-        end
-
-        parser.advance
-      end
+      parser.advance
     end
-
-    puts "Hackファイルへの出力が完了しました。"
   end
 
-  private 
+  def compile
+    output_file_path = @file_path.gsub(/\.asm$/, ".hack")
 
-  def get_assembly_file(file_path)
-    if File.extname(file_path) != ".asm"
-      puts "エラー: 指定されたファイルはアセンブリファイルではありません。プログラムを中断します。"
-      exit 1 
-    end
+    output_file = File.open(output_file_path, "w")
+    parser = Parser.new(@file_path)
 
-    begin
-      File.read(file_path)
-    rescue Errno::ENOENT
-      puts "エラー: 指定されたファイルが見つかりませんでした。プログラムを中断します。"
-      exit 1 
-    rescue => e
-      puts "エラーが発生しました: #{e.message}プログラムを中断します。"
-      exit 1 
+    while parser.has_more_commands    
+      case parser.command_type
+      when "A_COMMAND"
+        address = parser.symbol.match?(/\A\d+\z/) ? parser.symbol.to_i : @symbol_table.get_address(parser.symbol)
+        output_file.puts "#{address.to_s(2).rjust(16, '0')}"
+      when 'C_COMMAND'
+        output_file.puts "111#{@code.comp(parser.comp)}#{@code.dest(parser.dest)}#{@code.jump(parser.jump)}"
+      end
+
+      parser.advance
     end
   end
 end
 
-Assembler.new.execute
+print "アセンブリファイルのパスを入力してください:"
+file_path = gets.chomp
+Assembler.new(file_path).execute
