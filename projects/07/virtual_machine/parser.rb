@@ -39,7 +39,8 @@ class Parser
   end
 
   def arg1
-    @commands[@index].strip.split(" ")[1]
+    command_words = @commands[@index].strip.split(" ")
+    command_words[1] || command_words[0]
   end
 
   def arg2
