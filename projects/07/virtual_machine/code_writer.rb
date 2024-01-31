@@ -1,4 +1,16 @@
 class CodeWriter
+  REFERENCED_SEGMENTS = {
+    "local" => "LCL",
+    "argument" => "ARG",
+    "this" => "THIS",
+    "that" => "THAT",
+  }.freeze
+
+  STATIC_SEGMENTS = {
+    "pointer" => 3,
+    "temp" => 5,
+  }.freeze
+
   def initialize
     @output_file = nil
     @label_count = 0
@@ -41,11 +53,26 @@ class CodeWriter
     end
   end
 
-  private 
+  private
 
   def write_push(segment, index)
-    @output_file.puts "@#{index}"
-    @output_file.puts "D=A"
+    if segment == "constant"
+      @output_file.puts "@#{index}"
+      @output_file.puts "D=A"
+    elsif REFERENCED_SEGMENTS.keys.include?(segment)
+      @output_file.puts "@#{REFERENCED_SEGMENTS[segment]}"
+      @output_file.puts "A=M"
+
+      for i in 0..index.to_i - 1
+        @output_file.puts "A=A+1"
+      end
+      @output_file.puts "D=M"
+    elsif STATIC_SEGMENTS.keys.include?(segment)
+      @output_file.puts "@#{STATIC_SEGMENTS[segment] + index.to_i}"
+      @output_file.puts "A=M"
+      @output_file.puts "D=M"
+    end
+
     @output_file.puts "@SP"
     @output_file.puts "A=M"
     @output_file.puts "M=D"
@@ -58,10 +85,20 @@ class CodeWriter
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
     @output_file.puts "D=M"
-    @output_file.puts "@#{index}"
+
+    if segment == "constant"
+      @output_file.puts "@#{index}"
+    elsif REFERENCED_SEGMENTS.keys.include?(segment)
+      @output_file.puts "@#{REFERENCED_SEGMENTS[segment]}"
+      @output_file.puts "A=M"
+      for i in 0..index.to_i - 1
+        @output_file.puts "A=A+1"
+      end
+    elsif STATIC_SEGMENTS.keys.include?(segment)
+      @output_file.puts "@#{STATIC_SEGMENTS[segment] + index.to_i}"
+      @output_file.puts "A=M"
+    end
     @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
   end
 
   def write_add
@@ -159,7 +196,7 @@ class CodeWriter
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
     @output_file.puts "D=D-M"
-    @output_file.puts "@LT_TRUE_#{@label_count}"
+    @output_file.puts "@LT_TRUE_#{@¥label_count}"
     @output_file.puts "D;JGT"
     @output_file.puts "D=0"
     @output_file.puts "@LT_END_#{@label_count}"

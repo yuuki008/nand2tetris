@@ -12,7 +12,6 @@ class VirtualMachine
     parser = Parser.new(@file_path)
 
     while parser.has_more_commands
-      puts "現在のコマンド: #{parser.command_type} #{parser.arg1} #{parser.arg2}"
       case parser.command_type
       when "C_ARITHMETIC"
         @code_writer.write_arithmetic(parser.arg1)
@@ -29,5 +28,5 @@ end
 
 # print "VMファイルのパスを入力してください:"
 # file_path = gets.chomp
-file_path = '../StackArithmetic/StackTest/StackTest.vm'
+file_path = '../MemoryAccess/BasicTest/BasicTest.vm'
 VirtualMachine.new(file_path).translate
