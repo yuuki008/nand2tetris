@@ -26,6 +26,6 @@ class VirtualMachine
   end
 end
 
-# print "VMファイルのパスを入力してください:"
+print "VMファイルのパスを入力してください:"
 file_path = gets.chomp
 VirtualMachine.new(file_path).translate
