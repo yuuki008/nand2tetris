@@ -56,49 +56,112 @@ class CodeWriter
   private
 
   def write_push(segment, index)
-    if segment == "constant"
-      @output_file.puts "@#{index}"
-      @output_file.puts "D=A"
-    elsif REFERENCED_SEGMENTS.keys.include?(segment)
-      @output_file.puts "@#{REFERENCED_SEGMENTS[segment]}"
-      @output_file.puts "A=M"
-
-      for i in 0..index.to_i - 1
-        @output_file.puts "A=A+1"
-      end
-      @output_file.puts "D=M"
-    elsif STATIC_SEGMENTS.keys.include?(segment)
-      @output_file.puts "@#{STATIC_SEGMENTS[segment] + index.to_i}"
-      @output_file.puts "A=M"
-      @output_file.puts "D=M"
+    case
+    when REFERENCED_SEGMENTS.keys.include?(segment)
+      write_push_from_referenced_segment(segment, index)
+    when STATIC_SEGMENTS.keys.include?(segment)
+      write_push_from_static_segment(segment, index)
+    when segment == "constant"
+      write_push_from_constant_segment(segment, index)
     end
+  end
 
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+  def write_push_from_referenced_segment(segment, index)
+    commands = []
+    commands << "@#{REFERENCED_SEGMENTS[segment]}"
+    commands << "A=M"
+    for i in 0..index.to_i - 1
+      commands << "A=A+1"
+    end
+    commands << "D=M"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+
+    write_commands(commands)
+  end
+
+  def write_push_from_static_segment(segment, index)
+    commands = []
+    commands << "@#{STATIC_SEGMENTS[segment]}"
+    for i in 0..index.to_i - 1
+      commands << "A=A+1"
+    end
+    commands << "D=M"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+
+    write_commands(commands)
+  end
+
+  def write_push_from_constant_segment(segment, index)
+    commands = []
+    commands << "@#{index}"
+    commands << "D=A"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+
+    write_commands(commands)
   end
 
   def write_pop(segment, index)
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-
-    if segment == "constant"
-      @output_file.puts "@#{index}"
-    elsif REFERENCED_SEGMENTS.keys.include?(segment)
-      @output_file.puts "@#{REFERENCED_SEGMENTS[segment]}"
-      @output_file.puts "A=M"
-      for i in 0..index.to_i - 1
-        @output_file.puts "A=A+1"
-      end
-    elsif STATIC_SEGMENTS.keys.include?(segment)
-      @output_file.puts "@#{STATIC_SEGMENTS[segment] + index.to_i}"
-      @output_file.puts "A=M"
+    case
+    when REFERENCED_SEGMENTS.keys.include?(segment)
+      write_pop_from_referenced_segment(segment, index)
+    when STATIC_SEGMENTS.keys.include?(segment)
+      write_pop_from_static_segment(segment, index)
+    when segment == "constant"
+      write_pop_from_constant_segment(segment, index)
     end
-    @output_file.puts "M=D"
+  end
+
+  def write_pop_from_referenced_segment(segment, index)
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@#{REFERENCED_SEGMENTS[segment]}"
+    commands << "A=M"
+    for i in 0..index.to_i - 1
+      commands << "A=A+1"
+    end
+    commands << "M=D"
+
+    write_commands(commands)
+  end
+
+  def write_pop_from_static_segment(segment, index)
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@#{STATIC_SEGMENTS[segment]}"
+    for i in 0..index.to_i - 1
+      commands << "A=A+1"
+    end
+    commands << "M=D"
+
+    write_commands(commands)
+  end
+
+  def write_pop_from_constant_segment(segment, index)
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@#{index}"
+    commands << "M=D"
   end
 
   def write_add
@@ -109,7 +172,10 @@ class CodeWriter
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
-    @output_file.puts "M=D+M"
+    @output_file.puts "D=D+M"
+    @output_file.puts "@SP"
+    @output_file.puts "A=M"
+    @output_file.puts "M=D"
     @output_file.puts "@SP"
     @output_file.puts "M=M+1"
   end
@@ -118,11 +184,14 @@ class CodeWriter
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
-    @output_file.puts "D=-M"
+    @output_file.puts "D=M"
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
-    @output_file.puts "M=D+M"
+    @output_file.puts "D=M-D"
+    @output_file.puts "@SP"
+    @output_file.puts "A=M"
+    @output_file.puts "M=D"
     @output_file.puts "@SP"
     @output_file.puts "M=M+1"
   end
@@ -137,6 +206,9 @@ class CodeWriter
   end
 
   def write_eq
+    true_label = new_label
+    false_label = new_label
+
     @label_count += 1
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
@@ -146,14 +218,14 @@ class CodeWriter
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
     @output_file.puts "D=D-M"
-    @output_file.puts "@EQ_TRUE_#{@label_count}"
+    @output_file.puts "@#{true_label}"
     @output_file.puts "D;JEQ"
     @output_file.puts "D=0"
-    @output_file.puts "@EQ_END_#{@label_count}"
+    @output_file.puts "@#{false_label}"
     @output_file.puts "0;JMP"
-    @output_file.puts "(EQ_TRUE_#{@label_count})"
+    @output_file.puts "(#{true_label})"
     @output_file.puts "D=-1"
-    @output_file.puts "(EQ_END_#{@label_count})"
+    @output_file.puts "(#{false_label})"
     @output_file.puts "@SP"
     @output_file.puts "A=M"
     @output_file.puts "M=D"
@@ -162,6 +234,9 @@ class CodeWriter
   end
 
   def write_gt
+    true_label = new_label
+    false_label = new_label
+
     @label_count += 1
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
@@ -171,14 +246,14 @@ class CodeWriter
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
     @output_file.puts "D=D-M"
-    @output_file.puts "@LT_TRUE_#{@label_count}"
+    @output_file.puts "@#{true_label}"
     @output_file.puts "D;JLT"
     @output_file.puts "D=0"
-    @output_file.puts "@LT_END_#{@label_count}"
+    @output_file.puts "@#{false_label}"
     @output_file.puts "0;JMP"
-    @output_file.puts "(LT_TRUE_#{@label_count})"
+    @output_file.puts "(#{true_label})"
     @output_file.puts "D=-1"
-    @output_file.puts "(LT_END_#{@label_count})"
+    @output_file.puts "(#{false_label})"
     @output_file.puts "@SP"
     @output_file.puts "A=M"
     @output_file.puts "M=D"
@@ -187,6 +262,8 @@ class CodeWriter
   end
 
   def write_lt
+    true_label = new_label
+    false_label = new_label
     @label_count += 1
     @output_file.puts "@SP"
     @output_file.puts "M=M-1"
@@ -196,14 +273,14 @@ class CodeWriter
     @output_file.puts "M=M-1"
     @output_file.puts "A=M"
     @output_file.puts "D=D-M"
-    @output_file.puts "@LT_TRUE_#{@¥label_count}"
+    @output_file.puts "@#{true_label}"
     @output_file.puts "D;JGT"
     @output_file.puts "D=0"
-    @output_file.puts "@LT_END_#{@label_count}"
+    @output_file.puts "@#{false_label}"
     @output_file.puts "0;JMP"
-    @output_file.puts "(LT_TRUE_#{@label_count})"
+    @output_file.puts "(#{true_label})"
     @output_file.puts "D=-1"
-    @output_file.puts "(LT_END_#{@label_count})"
+    @output_file.puts "(#{false_label})"
     @output_file.puts "@SP"
     @output_file.puts "A=M"
     @output_file.puts "M=D"
@@ -244,5 +321,16 @@ class CodeWriter
     @output_file.puts "M=!M"
     @output_file.puts "@SP"
     @output_file.puts "M=M+1"
+  end
+
+  def write_commands(commands)
+    commands.each do |command|
+      @output_file.puts command
+    end
+  end
+
+  def new_label
+    @label_count += 1
+    "LABEL_#{@label_count}"
   end
 end
