@@ -14,9 +14,11 @@ class CodeWriter
   def initialize
     @output_file = nil
     @label_count = 0
+    @set_file_name = nil
   end
 
   def set_file_name(file_name)
+    @set_file_name = File.basename(file_name, File.extname(file_name))
     output_file_path = file_name.gsub(/\.vm$/, ".asm")
     @output_file = File.open(output_file_path, "w")
   end
@@ -61,6 +63,8 @@ class CodeWriter
       write_push_from_referenced_segment(segment, index)
     when STATIC_SEGMENTS.keys.include?(segment)
       write_push_from_static_segment(segment, index)
+    when segment == "static" 
+      write_push_from_static(segment, index)
     when segment == "constant"
       write_push_from_constant_segment(segment, index)
     end
@@ -99,6 +103,19 @@ class CodeWriter
     write_commands(commands)
   end
 
+  def write_push_from_static(segment, index)
+    commands = []
+    commands << "@#{@set_file_name}.#{index}"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+
+    write_commands(commands)
+  end
+
   def write_push_from_constant_segment(segment, index)
     commands = []
     commands << "@#{index}"
@@ -118,6 +135,8 @@ class CodeWriter
       write_pop_from_referenced_segment(segment, index)
     when STATIC_SEGMENTS.keys.include?(segment)
       write_pop_from_static_segment(segment, index)
+    when segment == "static"
+      write_pop_from_static(segment, index)
     when segment == "constant"
       write_pop_from_constant_segment(segment, index)
     end
@@ -154,6 +173,18 @@ class CodeWriter
     write_commands(commands)
   end
 
+  def write_pop_from_static(segment, index)
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@#{@set_file_name}.#{index}"
+    commands << "M=D"
+
+    write_commands(commands)
+  end
+
   def write_pop_from_constant_segment(segment, index)
     commands = []
     commands << "@SP"
@@ -162,170 +193,189 @@ class CodeWriter
     commands << "D=M"
     commands << "@#{index}"
     commands << "M=D"
+    write_commands(commands)
   end
 
   def write_add
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=D+M"
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=D+M"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_sub
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M-D"
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M-D"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_neg
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "M=-M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "M=-M"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_eq
+    commands = []
     true_label = new_label
     false_label = new_label
 
     @label_count += 1
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=D-M"
-    @output_file.puts "@#{true_label}"
-    @output_file.puts "D;JEQ"
-    @output_file.puts "D=0"
-    @output_file.puts "@#{false_label}"
-    @output_file.puts "0;JMP"
-    @output_file.puts "(#{true_label})"
-    @output_file.puts "D=-1"
-    @output_file.puts "(#{false_label})"
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=D-M"
+    commands << "@#{true_label}"
+    commands << "D;JEQ"
+    commands << "D=0"
+    commands << "@#{false_label}"
+    commands << "0;JMP"
+    commands << "(#{true_label})"
+    commands << "D=-1"
+    commands << "(#{false_label})"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_gt
+    commands = []
     true_label = new_label
     false_label = new_label
 
     @label_count += 1
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=D-M"
-    @output_file.puts "@#{true_label}"
-    @output_file.puts "D;JLT"
-    @output_file.puts "D=0"
-    @output_file.puts "@#{false_label}"
-    @output_file.puts "0;JMP"
-    @output_file.puts "(#{true_label})"
-    @output_file.puts "D=-1"
-    @output_file.puts "(#{false_label})"
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=D-M"
+    commands << "@#{true_label}"
+    commands << "D;JLT"
+    commands << "D=0"
+    commands << "@#{false_label}"
+    commands << "0;JMP"
+    commands << "(#{true_label})"
+    commands << "D=-1"
+    commands << "(#{false_label})"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_lt
+    commands = []
     true_label = new_label
     false_label = new_label
     @label_count += 1
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=D-M"
-    @output_file.puts "@#{true_label}"
-    @output_file.puts "D;JGT"
-    @output_file.puts "D=0"
-    @output_file.puts "@#{false_label}"
-    @output_file.puts "0;JMP"
-    @output_file.puts "(#{true_label})"
-    @output_file.puts "D=-1"
-    @output_file.puts "(#{false_label})"
-    @output_file.puts "@SP"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=D-M"
+    commands << "@#{true_label}"
+    commands << "D;JGT"
+    commands << "D=0"
+    commands << "@#{false_label}"
+    commands << "0;JMP"
+    commands << "(#{true_label})"
+    commands << "D=-1"
+    commands << "(#{false_label})"
+    commands << "@SP"
+    commands << "A=M"
+    commands << "M=D"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_and
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D&M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "M=D&M"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_or
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "D=M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "M=D|M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "D=M"
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "M=D|M"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_not
-    @output_file.puts "@SP"
-    @output_file.puts "M=M-1"
-    @output_file.puts "A=M"
-    @output_file.puts "M=!M"
-    @output_file.puts "@SP"
-    @output_file.puts "M=M+1"
+    commands = []
+    commands << "@SP"
+    commands << "M=M-1"
+    commands << "A=M"
+    commands << "M=!M"
+    commands << "@SP"
+    commands << "M=M+1"
+    write_commands(commands)
   end
 
   def write_commands(commands)
     commands.each do |command|
-      @output_file.puts command
+      @output_file.puts(command)
     end
   end
 
