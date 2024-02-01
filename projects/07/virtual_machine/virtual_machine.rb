@@ -27,6 +27,5 @@ class VirtualMachine
 end
 
 # print "VMファイルのパスを入力してください:"
-# file_path = gets.chomp
-file_path = '../MemoryAccess/BasicTest/BasicTest.vm'
+file_path = gets.chomp
 VirtualMachine.new(file_path).translate
