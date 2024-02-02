@@ -25,24 +25,12 @@ class CodeWriter
 
   def write_arithmetic(command)
     case command
-    when "add"
-      write_add
-    when "sub"
-      write_sub
-    when "neg"
-      write_neg
-    when "eq"
-      write_eq
-    when "gt"
-      write_gt
-    when "lt"
-      write_lt
-    when "and"
-      write_and
-    when "or"
-      write_or
-    when "not"
-      write_not
+    when 'add', 'sub', 'and', 'or'
+      write_binary_operation(command)
+    when "neg", 'not'
+      write_unary_operation(command)
+    when "eq", "gt", "lt"
+      write_comp_operation(command)
     end
   end
 
@@ -196,181 +184,88 @@ class CodeWriter
     write_commands(commands)
   end
 
-  def write_add
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=D+M"
-    commands << "@SP"
-    commands << "A=M"
-    commands << "M=D"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_binary_operation(command)
+    write_pop_to_a_register
+    write_command('D=M')
+    write_pop_to_a_register
+
+    case command
+    when "add"
+      write_command('D=D+M')
+    when 'sub'
+      write_command('D=M-D')
+    when 'and'
+      write_command('D=D&M')
+    when 'or'
+      write_command('D=D|M')
+    end
+    write_push_from_d_register
   end
 
-  def write_sub
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M-D"
-    commands << "@SP"
-    commands << "A=M"
-    commands << "M=D"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_unary_operation(command)
+    write_commands([
+      '@SP',
+      'A=M-1',
+    ])
+
+    case command
+    when "neg"
+      write_command('M=-M')
+    when "not"
+      write_command('M=!M')
+    end
   end
 
-  def write_neg
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "M=-M"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_comp_operation(command)
+    write_pop_to_a_register
+    write_command('D=M')
+    write_pop_to_a_register
+    l1 = new_label
+    l2 = new_label
+
+    case command
+    when "eq"
+      com_type = "JEQ"
+    when "gt"
+      comp_type = "JGT"
+    when "lt"
+      comp_type = "JLT"
+    end
+
+    write_commands([
+      "D=M-D",
+      "@#{l1}",
+      "D;#{comp_type}",
+      "D=0",
+      "@#{l2}",
+      "0;JMP",
+      "(#{l1})",
+      "D=-1",
+      "(#{l2})",
+    ])
+    write_push_from_d_register
   end
 
-  def write_eq
-    commands = []
-    true_label = new_label
-    false_label = new_label
-
-    @label_count += 1
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=D-M"
-    commands << "@#{true_label}"
-    commands << "D;JEQ"
-    commands << "D=0"
-    commands << "@#{false_label}"
-    commands << "0;JMP"
-    commands << "(#{true_label})"
-    commands << "D=-1"
-    commands << "(#{false_label})"
-    commands << "@SP"
-    commands << "A=M"
-    commands << "M=D"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_pop_to_a_register
+    write_commands([
+      '@SP',
+      'M=M-1',
+      'A=M'
+    ])
   end
 
-  def write_gt
-    commands = []
-    true_label = new_label
-    false_label = new_label
-
-    @label_count += 1
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=D-M"
-    commands << "@#{true_label}"
-    commands << "D;JLT"
-    commands << "D=0"
-    commands << "@#{false_label}"
-    commands << "0;JMP"
-    commands << "(#{true_label})"
-    commands << "D=-1"
-    commands << "(#{false_label})"
-    commands << "@SP"
-    commands << "A=M"
-    commands << "M=D"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_push_from_d_register
+    write_commands([
+      '@SP',
+      'A=M',
+      'M=D',
+      '@SP',
+      'M=M+1'
+    ])
   end
 
-  def write_lt
-    commands = []
-    true_label = new_label
-    false_label = new_label
-    @label_count += 1
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=D-M"
-    commands << "@#{true_label}"
-    commands << "D;JGT"
-    commands << "D=0"
-    commands << "@#{false_label}"
-    commands << "0;JMP"
-    commands << "(#{true_label})"
-    commands << "D=-1"
-    commands << "(#{false_label})"
-    commands << "@SP"
-    commands << "A=M"
-    commands << "M=D"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
-  end
-
-  def write_and
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "M=D&M"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
-  end
-
-  def write_or
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "D=M"
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "M=D|M"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
-  end
-
-  def write_not
-    commands = []
-    commands << "@SP"
-    commands << "M=M-1"
-    commands << "A=M"
-    commands << "M=!M"
-    commands << "@SP"
-    commands << "M=M+1"
-    write_commands(commands)
+  def write_command(command)
+    @output_file.puts(command)
   end
 
   def write_commands(commands)
