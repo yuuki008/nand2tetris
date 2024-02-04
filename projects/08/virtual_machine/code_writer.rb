@@ -23,6 +23,51 @@ class CodeWriter
     @output_file = File.open(output_file_path, "w")
   end
 
+  def write_init
+    write_commands([
+      "@256",
+      "D=A",
+      "@SP",
+      "M=D"
+    ])
+    write_call("Sys.init", 0)
+  end
+
+  def write_label(label_name)
+    write_commands([
+      "(#{label_name})"
+    ])
+  end
+
+  def write_goto(label_name)
+    write_commands([
+      "@#{label_name}",
+      "0;JMP"
+    ])
+  end
+
+  def write_if(label_name)
+    write_commands([
+      '@SP',
+      'AM=M-1',
+      'D=M',
+      "@#{label_name}",
+      'D;JNE'
+    ])
+  end
+
+  def write_call(function_name, num_args)
+
+  end
+
+  def write_return
+
+  end
+
+  def write_function
+    
+  end
+
   def write_arithmetic(command)
     case command
     when 'add', 'sub', 'and', 'or'
@@ -41,6 +86,10 @@ class CodeWriter
     when "C_POP"
       write_pop(segment, index)
     end
+  end
+
+  def write_divider_comment(text)
+    write_command("// #{text}")
   end
 
   private

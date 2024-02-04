@@ -1,7 +1,8 @@
 class Parser
   def initialize(file_path)
     lines = file_readlines(file_path)
-    @commands = lines.reject { |line| line.include?("//") || line.strip.empty? }
+    filtered_lines = lines.reject { |line| line.strip.start_with?("//") || line.strip.empty? }
+    @commands = filtered_lines.map { |line| line.gsub(/\/\/.*/, "").strip }
     @index = 0
   end
 
@@ -23,7 +24,7 @@ class Parser
       return "C_POP"
     when command.include?("label")
       return "C_LABEL"
-    when command.include?("goto")
+    when command.include?("goto") && !command.include?("if-goto")
       return "C_GOTO"
     when command.include?("if-goto")
       return "C_IF"
