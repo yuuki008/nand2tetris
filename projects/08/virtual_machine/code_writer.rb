@@ -47,9 +47,8 @@ class CodeWriter
   end
 
   def write_if(label_name)
+    write_pop_to_a_register
     write_commands([
-      '@SP',
-      'AM=M-1',
       'D=M',
       "@#{label_name}",
       'D;JNE'
