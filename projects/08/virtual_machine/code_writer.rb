@@ -60,11 +60,51 @@ class CodeWriter
   end
 
   def write_return
+    write_commands([
+      "@LCL",
+      "D=M",
+      "@R13",
+      "M=D",
+    ])
+    write_pop_to_a_register
+    write_commands([
+      "D=M",
+      "@ARG",
+      "A=M",
+      "M=D",
+      "@ARG",
+      "D=M+1",
+      "@SP",
+      "M=D",
+    ])
 
+
+    register  = ["THAT", "THIS", "ARG", "LCL"]
+
+    commands = []
+    
+    register.each.with_index do |reg, i|
+      write_commands([
+        "@LCL",
+        "D=M",
+        "@#{i + 1}",
+        "A=D-A",
+        "D=M",
+        "@#{reg}",
+        "M=D"
+      ])
+    end
   end
 
-  def write_function
-    
+  def write_function(function_name, num_args)
+    write_commands([
+      "(#{function_name})",
+      "D=0"
+    ])
+
+    num_args.to_i.times do
+      write_push_from_d_register
+    end
   end
 
   def write_arithmetic(command)

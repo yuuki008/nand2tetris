@@ -24,6 +24,10 @@ class VirtualMachine
         @code_writer.write_goto(parser.arg1)
       when "C_IF"
         @code_writer.write_if(parser.arg1)
+      when "C_FUNCTION"
+        @code_writer.write_function(parser.arg1, parser.arg2)
+      when "C_RETURN"
+        @code_writer.write_return
       end
 
 
@@ -36,5 +40,5 @@ end
 
 # print "VMファイルのパスを入力してください:"
 # file_path = gets.chomp
-file_path = "../ProgramFlow/FibonacciSeries/FibonacciSeries.vm"
+file_path = "../FunctionCalls/SimpleFunction/SimpleFunction.vm"
 VirtualMachine.new(file_path).translate
