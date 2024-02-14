@@ -11,16 +11,17 @@ class CodeWriter
     "temp" => 5,
   }.freeze
 
-  def initialize
-    @output_file = nil
+  def initialize(file_path)
+    @output_file = File.open(file_path, "w")
     @label_count = 0
-    @set_file_name = nil
   end
 
   def set_file_name(file_name)
-    @set_file_name = File.basename(file_name, File.extname(file_name))
-    output_file_path = file_name.gsub(/\.vm$/, ".asm")
-    @output_file = File.open(output_file_path, "w")
+    @file_name = File.basename(file_name, File.extname(file_name))
+  end
+
+  def write_comment(comment)
+    write_command("// #{comment}")
   end
 
   def write_init
@@ -56,7 +57,53 @@ class CodeWriter
   end
 
   def write_call(function_name, num_args)
+    write_commands([
+      "@SP",
+      "D=M",
+    ])
 
+    write_commands([
+      # ARG をセット
+      "@SP",
+      "D=M",
+      "@ARG",
+      "M=D",
+      "@SP",
+      "M=M+1",
+
+      # LCL をセット
+      "@LCL",
+      "D=M",
+      "@SP",
+      "A=M",
+      "M=D",
+      "@SP",
+      "M=M+1",
+
+      # THIS をセット
+      "@THIS",
+      "D=M",
+      "@SP",
+      "A=M",
+      "M=D",
+      "@SP",
+      "M=M+1",
+
+      # THAT をセット
+      "@THAT",
+      "D=M",
+      "@SP",
+      "A=M",
+      "M=D",
+      "@SP",
+      "M=M+1",
+
+      # 呼び出される側の LCL をセット
+      "@SP",
+      "D=M",
+      "@LCL",
+      "M=D",
+    ])
   end
 
   def write_return
@@ -181,7 +228,7 @@ class CodeWriter
 
   def write_push_from_static(segment, index)
     commands = []
-    commands << "@#{@set_file_name}.#{index}"
+    commands << "@#{@file_name}.#{index}"
     commands << "D=M"
     commands << "@SP"
     commands << "A=M"
@@ -255,7 +302,7 @@ class CodeWriter
     commands << "M=M-1"
     commands << "A=M"
     commands << "D=M"
-    commands << "@#{@set_file_name}.#{index}"
+    commands << "@#{@file_name}.#{index}"
     commands << "M=D"
 
     write_commands(commands)
