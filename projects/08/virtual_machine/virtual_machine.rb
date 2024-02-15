@@ -5,7 +5,7 @@ class VirtualMachine
   def execute
     # print "VMファイルのパスを入力してください:"
     # file_path = gets.chomp
-    path = "../FunctionCalls/FibonacciElement"
+    path = "../FunctionCalls/StaticsTest"
   
 
     if path.end_with?(".vm")

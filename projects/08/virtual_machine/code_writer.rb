@@ -11,9 +11,12 @@ class CodeWriter
     "temp" => 5,
   }.freeze
 
+  BASE_ADDRESSES = %w(LCL ARG THIS THAT).freeze
+
   def initialize(file_path)
     @output_file = File.open(file_path, "w")
     @label_count = 0
+    @return_label_num = 0
   end
 
   def set_file_name(file_name)
@@ -57,90 +60,84 @@ class CodeWriter
   end
 
   def write_call(function_name, num_args)
+    label = get_new_return_label
+
+    # 呼び出し元のアドレスをスタックに追加
     write_commands([
-      "@SP",
-      "D=M",
+      "@#{label}",
+      'D=A'
+    ])
+    write_push_from_d_register # リターンアドレスをスタックに入れる
+
+    BASE_ADDRESSES.each do |address|
+      write_commands([
+        "@#{address}",
+        'D=M'
+      ])
+      write_push_from_d_register
+    end
+
+    write_commands([
+      "@#{num_args}",
+      'D=A',
+      '@5',
+      'D=D+A', # D = num_args + 5
+      '@SP',
+      'D=M-D',
+      '@ARG',
+      'M=D', # ARG = SP - 5 - num_args
+      '@SP',
+      'D=M',
+      '@LCL',
+      'M=D' # LCL = SP
     ])
 
     write_commands([
-      # ARG をセット
-      "@SP",
-      "D=M",
-      "@ARG",
-      "M=D",
-      "@SP",
-      "M=M+1",
-
-      # LCL をセット
-      "@LCL",
-      "D=M",
-      "@SP",
-      "A=M",
-      "M=D",
-      "@SP",
-      "M=M+1",
-
-      # THIS をセット
-      "@THIS",
-      "D=M",
-      "@SP",
-      "A=M",
-      "M=D",
-      "@SP",
-      "M=M+1",
-
-      # THAT をセット
-      "@THAT",
-      "D=M",
-      "@SP",
-      "A=M",
-      "M=D",
-      "@SP",
-      "M=M+1",
-
-      # 呼び出される側の LCL をセット
-      "@SP",
-      "D=M",
-      "@LCL",
-      "M=D",
+      "@#{function_name}",
+      '0;JMP',
+      "(#{label})"
     ])
   end
 
   def write_return
     write_commands([
-      "@LCL",
-      "D=M",
-      "@R13",
-      "M=D",
+      '@LCL',
+      'D=M',
+      '@R13',
+      'M=D', # R13 = FRAME = LCL
+      '@5',
+      'A=D-A',
+      'D=M',
+      '@R14',
+      'M=D', # R14 = RET = *(FRAME - 5)
+      '@SP',
+      'AM=M-1', # SP--, A = *(SP)
+      'D=M', # D = RET = *(FRAME - 1)
+      '@ARG',
+      'A=M',
+      'M=D', # *ARG = *(SP-1)
+      '@ARG',
+      'D=M+1',
+      '@SP',
+      'M=D' # SP = ARG + 1
     ])
-    write_pop_to_a_register
-    write_commands([
-      "D=M",
-      "@ARG",
-      "A=M",
-      "M=D",
-      "@ARG",
-      "D=M+1",
-      "@SP",
-      "M=D",
-    ])
 
-
-    register  = ["THAT", "THIS", "ARG", "LCL"]
-
-    commands = []
-    
-    register.each.with_index do |reg, i|
+    BASE_ADDRESSES.reverse.each do |address|
       write_commands([
-        "@LCL",
-        "D=M",
-        "@#{i + 1}",
-        "A=D-A",
-        "D=M",
-        "@#{reg}",
-        "M=D"
+        '@R13',
+        'D=M-1',
+        'AM=D', # R13 = FRAME = LCL - 1, A = *(FRAME - 1)
+        'D=M',
+        "@#{address}",
+        'M=D' # *address = *(FRAME-n)
       ])
     end
+
+    write_commands([
+      '@R14',
+      'A=M',
+      '0;JMP' # goto return-address
+    ])
   end
 
   def write_function(function_name, num_args)
@@ -412,5 +409,10 @@ class CodeWriter
   def new_label
     @label_count += 1
     "LABEL_#{@label_count}"
+  end
+
+  def get_new_return_label
+    @return_label_num += 1
+    "_RETURN_LABEL_#{@return_label_num}"
   end
 end
