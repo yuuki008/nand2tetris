@@ -65,8 +65,11 @@ class JackTokenizer
   }
 
   def initialize(file_path)
-    @file = File.open(file_path)
-    @tokens = @file.read.split(/(\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
+    lines = File.readlines(file_path)
+    filtered_lines = lines.reject { |line| line.strip.start_with?("//") || line.strip.empty? }
+    exclude_comments_lines = filtered_lines.map { |line| line.gsub(/\/\/.*/, "").strip }
+
+    @tokens = exclude_comments_lines.join.split(/(\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
     @index = 0
     @output_file = File.open(file_path.gsub('.jack', 'T.xml'), 'w')
   end
