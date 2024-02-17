@@ -1,10 +1,10 @@
-require_relative 'jack_tokenizer'
+require_relative '../../jack_tokenizer'
 require 'minitest/autorun'
 
 class JackTokenizerTest < Minitest::Test
   describe "token_type" do
     def test_keyword
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
       JackTokenizer::KEYWORDS.each do |key, value|
         assert_equal "KEYWORD", tokenizer.token_type(key)
@@ -12,7 +12,7 @@ class JackTokenizerTest < Minitest::Test
     end
 
     def test_symbol
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
       JackTokenizer::SYMBOLS.each do |symbol|
         assert_equal "SYMBOL", tokenizer.token_type(symbol)
@@ -20,20 +20,20 @@ class JackTokenizerTest < Minitest::Test
     end
 
     def test_int_const
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
       assert_equal "INT_CONST", tokenizer.token_type("123")
       assert_equal "INT_CONST", tokenizer.token_type("0")
     end
 
     def test_string_const
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
       assert_equal "STRING_CONST", tokenizer.token_type('"Hello"')
     end
 
     def test_identifier
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
       assert_equal "IDENTIFIER", tokenizer.token_type('hoge')
     end
@@ -41,9 +41,9 @@ class JackTokenizerTest < Minitest::Test
 
   describe 'advance' do
     def test_advance
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
 
-      file = File.open("./test.jack")
+      file = File.open("test/jack_tokenizer/test.jack")
       tokens = file.read.split(/(\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
 
       tokens.each do |token, index|
@@ -55,7 +55,7 @@ class JackTokenizerTest < Minitest::Test
 
   describe 'execute' do
     def test_output_xml
-      tokenizer = JackTokenizer.new("./test.jack")
+      tokenizer = JackTokenizer.new("test/jack_tokenizer/test.jack")
       tokenizer.execute
 
       expected = File.read('./testTT.xml').strip.gsub(/\n/, '')
