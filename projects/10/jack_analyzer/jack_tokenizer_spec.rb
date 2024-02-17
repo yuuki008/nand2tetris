@@ -58,10 +58,11 @@ class JackTokenizerTest < Minitest::Test
       tokenizer = JackTokenizer.new("./test.jack")
       tokenizer.execute
 
-      expected = File.read('./testT.xml').strip.gsub(/\n/, '')
+      expected = File.read('./testTT.xml').strip.gsub(/\n/, '')
       actual = File.read(tokenizer.output_file.path).strip.gsub(/\n/, '')
 
       assert_equal expected, actual
+      File.delete(tokenizer.output_file.path)
     end
   end
 end
