@@ -29,7 +29,9 @@ class JackTokenizerTest < Minitest::Test
     def test_string_const
       tokenizer = JackTokenizer.new("tests/jack_tokenizer/test.jack")
 
+      puts tokenizer.token_type('"string constant"')
       assert_equal "STRING_CONST", tokenizer.token_type('"Hello"')
+      assert_equal "STRING_CONST", tokenizer.token_type('"string constant"')
     end
 
     def test_identifier

@@ -65,11 +65,10 @@ class JackTokenizer
   }
 
   def initialize(file_path)
-    lines = File.readlines(file_path)
-    filtered_lines = lines.reject { |line| line.strip.start_with?("//") || line.strip.empty? }
-    exclude_comments_lines = filtered_lines.map { |line| line.gsub(/\/\/.*/, "").strip }
-
-    @tokens = exclude_comments_lines.join.split(/(\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
+    file = File.read(file_path)
+    text_without_cross_line_comments = file.gsub(%r{/\*\*(.*?)\*/}m, '')
+    text_without_comments = text_without_cross_line_comments.lines.map { |line| line.strip.gsub(/\/\/.*$/, '').chomp }
+    @tokens = text_without_comments.join.split(/("[^"\\]*(?:\\.[^"\\]*)*"|\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
     @index = 0
     @output_file = File.open(file_path.gsub('.jack', 'T.xml'), 'w')
   end
@@ -110,7 +109,7 @@ class JackTokenizer
 
     write_code('</tokens>')
 
-    puts @output_file.close
+    @output_file.close
   end
   
 
