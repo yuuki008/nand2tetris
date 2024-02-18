@@ -1,5 +1,5 @@
 class JackTokenizer
-  attr_reader :index, :tokens, :output_file
+  attr_reader :index, :token, :tokens, :output_file
 
   TOKEN_TYPES = {
     'KEYWORD' => 'keyword',

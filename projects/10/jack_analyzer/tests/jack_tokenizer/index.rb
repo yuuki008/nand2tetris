@@ -29,7 +29,6 @@ class JackTokenizerTest < Minitest::Test
     def test_string_const
       tokenizer = JackTokenizer.new("tests/jack_tokenizer/test.jack")
 
-      puts tokenizer.token_type('"string constant"')
       assert_equal "STRING_CONST", tokenizer.token_type('"Hello"')
       assert_equal "STRING_CONST", tokenizer.token_type('"string constant"')
     end
@@ -45,13 +44,20 @@ class JackTokenizerTest < Minitest::Test
     def test_advance
       tokenizer = JackTokenizer.new("tests/jack_tokenizer/test.jack")
 
-      file = File.open("tests/jack_tokenizer/test.jack")
-      tokens = file.read.split(/(\s+|\{|}|\(|\)|\[|\]|\.|,|;|\+|-|\*|\/|&|\||<|>|=|~)/).reject { |token| token.strip.empty? }
-
-      tokens.each do |token, index|
-        assert_equal token, tokens[tokenizer.index]
+      tokenizer.tokens.each do |token, index|
+        assert_equal token, tokenizer.token
         tokenizer.advance
       end
+    end
+  end
+
+  describe 'initialize' do
+    def test_exclude_comments
+      tokenizer = JackTokenizer.new("tests/jack_tokenizer/test.jack")
+
+      expected = ["if", "(", "x", "<", "153", ")", "{", "let", "city", "=", "\"Paris\"", ";", "}"]
+
+      assert_equal expected, tokenizer.tokens
     end
   end
 
