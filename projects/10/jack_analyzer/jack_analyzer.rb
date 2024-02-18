@@ -2,8 +2,8 @@ require_relative './jack_tokenizer'
 
 class JackAnalyzer
   def initialize
-    # @path = get.chomp
-    @path = '../Square'
+    print "Enter the path of the file or directory: "
+    @path = gets.chomp
   end
 
   def execute
