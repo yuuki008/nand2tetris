@@ -1,5 +1,5 @@
 class JackTokenizer
-  attr_reader :index, :token, :tokens, :output_file
+  attr_reader :input_file_path, :index, :token, :tokens, :output_file
 
   TOKEN_TYPES = {
     'KEYWORD' => 'keyword',
@@ -65,6 +65,7 @@ class JackTokenizer
   }
 
   def initialize(file_path)
+    @input_file_path = file_path
     file = File.read(file_path)
     text_without_cross_line_comments = file.gsub(%r{/\*\*(.*?)\*/}m, '')
     text_without_comments = text_without_cross_line_comments.lines.map { |line| line.strip.gsub(/\/\/.*$/, '').chomp }
@@ -136,15 +137,21 @@ class JackTokenizer
   end
 
   def keyword
+    raise 'Not a keyword' unless token_type(token) === 'KEYWORD'
 
+    token
   end
 
   def symbol
+    raise 'Not a symbol' unless token_type(token) === 'SYMBOL'
 
+    token
   end
 
   def identifier
+    raise 'Not an identifier' unless token_type(token) === 'IDENTIFIER'
 
+    token
   end
 
   def int_val
