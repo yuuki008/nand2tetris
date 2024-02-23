@@ -79,9 +79,9 @@ class JackTokenizer
   end
 
   def escape_token
-    if token_type(token) === 'SYMBOL'
+    if token_type === 'SYMBOL'
       return ESCAPED_SYMBOLS[token] || token
-    elsif token_type(token) === 'STRING_CONST'
+    elsif token_type === 'STRING_CONST'
       return token[1..-2]
     else
       return token
@@ -92,7 +92,7 @@ class JackTokenizer
     write_code('<tokens>')
 
     while has_more_tokens?
-      case token_type(token)
+      case token_type
       when 'KEYWORD'
         write_code("<keyword> #{escape_token} </keyword>")
       when 'SYMBOL'
@@ -122,7 +122,7 @@ class JackTokenizer
     @index += 1
   end
 
-  def token_type(token)
+  def token_type
     if KEYWORDS.include?(token)
       return 'KEYWORD'
     elsif SYMBOLS.include?(token)
@@ -137,29 +137,33 @@ class JackTokenizer
   end
 
   def keyword
-    raise 'Not a keyword' unless token_type(token) === 'KEYWORD'
+    raise 'Not a keyword' unless token_type === 'KEYWORD'
 
     token
   end
 
   def symbol
-    raise 'Not a symbol' unless token_type(token) === 'SYMBOL'
+    raise 'Not a symbol' unless token_type === 'SYMBOL'
 
     token
   end
 
   def identifier
-    raise 'Not an identifier' unless token_type(token) === 'IDENTIFIER'
+    raise 'Not an identifier' unless token_type === 'IDENTIFIER'
 
     token
   end
 
   def int_val
+    raise 'Not an integer constant' unless token_type === 'INT_CONST'
 
+    token
   end
 
   def string_val
+    raise 'Not a string constant' unless token_type === 'STRING_CONST'
 
+    token
   end
 
   private
