@@ -78,6 +78,10 @@ class JackTokenizer
     @tokens[@index]
   end
 
+  def next_token
+    @tokens[@index + 1]
+  end
+
   def escape_token
     if token_type === 'SYMBOL'
       return ESCAPED_SYMBOLS[token] || token
@@ -112,7 +116,6 @@ class JackTokenizer
 
     @output_file.close
   end
-  
 
   def has_more_tokens?
     @index < @tokens.length

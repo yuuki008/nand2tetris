@@ -1,4 +1,10 @@
 class CompilationEngine
+  UNARY_OP = %w(- ~)
+  OP = %w(+ - * / & | < > =)
+  TYPE = %w(int char boolean)
+  SUBROUTINE = %w(constructor function method)
+  CLASS_VAR = %w(static field)
+  KEYWORD_CONSTANT = %w(true false null this)
   def initialize(tokenizer)
     @tokenizer = tokenizer
     @output_file = File.open(tokenizer.input_file_path.gsub('.jack', '.xml'), 'w')
@@ -7,96 +13,369 @@ class CompilationEngine
     @output_file.close
   end
 
-  def compile_class
-    write_code('<class>')
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
-    @tokenizer.advance
-    write_code("<identifier> #{@tokenizer.identifier} </identifier>")
-    @tokenizer.advance
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
-
-    while @tokenizer.token != "}"
-      case @tokenizer.keyword
-      when 'static', 'field'
-        compile_class_var_dec
-      when 'constructor', 'function', 'method'
-        compile_subroutine
-      end
-    end
-
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    write_code('</class>')
-  end
-
+  # ('static' | 'field') type varName (',' varName)* ';'
   def compile_class_var_dec
     write_code('<classVarDec>')
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
-    @tokenizer.advance
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
-    @tokenizer.advance
-    write_code("<identifier> #{@tokenizer.identifier} </identifier>")
-    @tokenizer.advance
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
+    compile_keyword('static', 'field')
+    compile_type
+    compile_identifer
+
+    while token?(',')
+      compile_symbol(',')
+      compile_identifer
+    end
+
+    compile_symbol(';')
     write_code('</classVarDec>')
   end
 
-  def compile_subroutine
+  # 'class' className '{' classVarDec* subroutineDec* '}'
+  def compile_class
+    write_code('<class>')
+    compile_keyword('class')
+    compile_identifer
+    compile_symbol('{')
+
+    compile_class_var_dec while next_class_var_dec?
+    compile_subroutine_dec while next_subroutine?
+
+    compile_symbol('}')
+    write_code('</class>')
+  end
+
+  def next_class_var_dec?
+    token?(CLASS_VAR)
+  end
+
+  def next_subroutine?
+    token?(SUBROUTINE)
+  end
+
+  # 'var' type varName (',' varName)* ';'
+  def compile_var_dec
+    write_code('<varDec>')
+    compile_keyword('var')
+    compile_type
+    compile_identifer
+
+    while token?(',')
+      compile_symbol(',')
+      compile_identifer
+    end
+
+    compile_symbol(';')
+    write_code('</varDec>')
+  end
+
+  # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
+  def compile_subroutine_dec
     write_code('<subroutineDec>')
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
-    @tokenizer.advance
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
-    @tokenizer.advance
-    write_code("<identifier> #{@tokenizer.identifier} </identifier>")
-    @tokenizer.advance
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
+    compile_keyword("constructor", "function", "method")
+    compile_return_type
+    compile_identifer
+    compile_symbol("(")
 
     compile_parameter_list
 
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
-    write_code('<subroutineBody>')
-  
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
-    @tokenizer.advance
-    write_code('</subroutineBody>')
+    compile_symbol(')')
+    compile_subroutine_body
     write_code('</subroutineDec>')
   end
 
+  # '{' varDec* statements '}
+  def compile_subroutine_body
+    write_code('<subroutineBody>')
+    compile_symbol('{')
+
+    while token?(%w(var let if while do return))
+      if token?('var')
+        compile_var_dec
+      else
+        compile_statements
+      end
+    end
+
+    compile_symbol('}')
+    write_code('</subroutineBody>')
+  end
+
+  # ((type varName) (',' type varName)* )?
   def compile_parameter_list
     write_code('<parameterList>')
+    compile_symbol('(')
+
+    if token? TYPE
+      compile_type
+      compile_var_name
+
+      while token?(',')
+        compile_symbol(',')
+        compile_type
+        compile_var_name
+      end
+    end
+
+    compile_symbol(')')
     write_code('</parameterList>')
   end
 
-  def compile_var_dec
-  end
-
+  # statement*
   def compile_statements
+    write_code('<statements>')
+
+    while token?(%w(let if while do return))
+      compile_statement
+    end
+
+    write_code('</statements>')
   end
 
-  def compile_do
+  # letStatement | ifStatement | whileStatement | doStatement | returnStatement
+  def compile_statement
+    case @tokenizer.keyword
+    when 'let'
+      compile_let_statement
+    when 'if'
+      compile_if_statement
+    when 'while'
+      compile_while_statement
+    when 'do'
+      compile_do_statement
+    when 'return'
+      compile_statement
+    end
   end
 
-  def compile_let
+  # 'let' varName ('[' expression ']')? '=' expression ';'
+  def compile_let_statement
+    write_code('<letStatement>')
+    compile_keyword("let")
+    compile_var_name
+
+    if next_token?("[")
+      compile_symbol("[")
+      compile_expression
+      compile_symbol("]")
+    end
+
+    compile_symbol("=")
+    compile_expression
+    compile_symbol(";")
+    write_code('</letStatement>')
   end
 
-  def compile_while
+  # 'do' subroutineCall ';'
+  def compile_do_statement
+    write_code('<doStatement>')
+    compile_keyword('do')
+    compile_subroutine_call
+    compile_symbol(';')
+    write_code('</doStatement>')
   end
 
-  def compile_return
+  # 'while' '(' expression ')' '{' statements '}'
+  def compile_while_statement
+    write_code('<whileStatement>')
+    compile_keyword('while')
+    compile_symbol('(')
+    compile_expression
+    compile_symbol(')')
+    compile_symbol('{')
+    compile_statements
+    compile_symbol('}')
+    write_code('</whileStatement>')
   end
 
-  def compile_if
+  # 'return' expression? ';'
+  def compile_statement
+    write_code('<returnStatement>')
+    compile_keyword('return')
+    compile_expression unless token?(';')
+    compile_symbol(';')
+    write_code('</returnStatement>')
   end
 
+  # 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
+  def compile_if_statement
+    write_code('<ifStatement>')
+    compile_keyword('if')
+    compile_symbol('(')
+    compile_expression
+    compile_symbol(')')
+    compile_symbol('{')
+    compile_statements
+    compile_symbol('}')
+
+    if token?('else')
+      compile_keyword('else')
+      compile_symbol('{')
+      compile_statements
+      compile_symbol('}')
+    end
+
+    write_code('</ifStatement>')
+  end
+
+  # term (op term)*
   def compile_expression
+    write_code('<expression>')
+
+    compile_term
+
+    while token?(OP)
+      compile_op
+      compile_term
+    end
+
+    write_code('</expression>')
+  end
+
+  # integerConstant | stringConstant | keywordConstant | varName | varName '[' expression ']' | subroutineCall | '(' expression ')' | unaryOp term
+  def compile_term
+    write_code('<term>')
+    
+    if @tokenizer.token_type == "INT_CONST"
+      compile_integer_constant
+    elsif @tokenizer.token_type == "STRING_CONST"
+      compile_string_constant
+    elsif token?(KEYWORD_CONSTANT)
+      compile_keyword_constant
+    elsif @tokenizer.token_type == "IDENTIFIER" && next_token?('(')
+      compile_subroutine_call
+    elsif @tokenizer.token_type == "IDENTIFIER" && next_token?("[")
+      compile_var_name
+      compile_symbol('[')
+      compile_expression
+      compile_symbol(']')
+    elsif @tokenizer.token_type == "IDENTIFIER"
+      compile_var_name
+    elsif token?('(')
+      compile_symbol('(')
+      compile_expression
+      compile_symbol(')')
+    elsif token?(UNARY_OP)
+      compile_unary_op
+      compile_term
+    end
+
+    write_code('</term>')
+  end
+
+  # subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName '(' expressionList ')'
+  def compile_subroutine_call
+    if next_token?('(') 
+      compile_subroutine_name
+      compile_symbol('(')
+      compile_expression_list
+      compile_symbol(')')
+    else
+      compile_identifer
+      compile_symbol('.')
+      compile_subroutine_name
+      compile_symbol('(')
+      compile_expression_list
+      compile_symbol(')')
+    end
+  end
+
+  # (expression (',' expression)* )?
+  def compile_expression_list
+    write_code('<expressionList>')
+    while @tokenizer.token != ")"
+      compile_expression
+    end
+    write_code('</expressionList>')
+  end
+
+  # '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
+  def compile_op
+    write_code('<op>')
+    compile_symbol(*OP)
+    write_code('</op>')
+  end
+
+  # '-' | '~'
+  def compile_unary_op
+    write_code('<unaryOp>')
+    compile_symbol('-', '~')
+    write_code('</unaryOp>')
+  end
+
+  # 'true' | 'false' | 'null' | 'this'
+  def compile_keyword_constant
+    write_code('<keywordConstant>')
+    compile_keyword('true', 'false', 'null', 'this')
+    write_code('</keywordConstant>')
   end
 
   private
+
+  # identifier
+  def compile_class_name
+    compile_identifer
+  end
+
+  # identifier
+  def compile_subroutine_name
+    compile_identifer
+  end
+
+  # identifier
+  def compile_var_name
+    compile_identifer
+  end
+
+  def compile_return_type
+    if token?(%w(void))
+      compile_keyword('void')
+    else
+      compile_type
+    end
+  end
+
+  # 'int' | 'char' | 'boolean' | className
+  def compile_type
+    if TYPE.include?(@tokenizer.keyword)
+      compile_keyword(*TYPE)
+    else
+      compile_identifer
+    end
+  end
+
+
+  # 終端記号
+  def compile_keyword(*tokens)
+    unless tokens.include?(@tokenizer.token)
+      raise "Expected keyword: \"#{tokens.join(', ')}\" but got \"#{@tokenizer.token}\""
+    end
+
+    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
+    @tokenizer.advance
+  end
+
+  def compile_symbol(*tokens)
+    unless tokens.include?(@tokenizer.token)
+      raise "Expected symbol: \"#{tokens.join(', ')}\" but got \"#{@tokenizer.token}\""
+    end
+
+    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
+    @tokenizer.advance
+  end
+
+  def compile_identifer
+    write_code("<identifier> #{@tokenizer.identifier} </identifier>")
+    @tokenizer.advance
+  end
+
+  def compile_integer_constant
+    write_code("<integerConstant> #{@tokenizer.int_val} </integerConstant>")
+    @tokenizer.advance
+  end
+
+  def compile_string_constant
+    write_code("<stringConstant> #{@tokenizer.string_val} </stringConstant>")
+    @tokenizer.advance
+  end
 
   def write_code(code)
     @output_file.write("#{code}\n")
@@ -106,5 +385,13 @@ class CompilationEngine
     codes.each do |code|
       write_code(code)
     end
+  end
+
+  def token?(tokens)
+    tokens.include?(@tokenizer.token)
+  end
+
+  def next_token?(tokens)
+    tokens.include?(@tokenizer.next_token)
   end
 end
