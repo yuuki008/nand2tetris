@@ -3,8 +3,7 @@ require "minitest/autorun"
 
 class JackAnalyzerTest < Minitest::Test
   def test_array_test
-    current_dir = File.expand_path(__dir__)
-    dir_path = File.join(current_dir, "../../../ArrayTest")
+    dir_path = dir_path("ArrayTest")
 
     JackAnalyzer.new(dir_path).execute
 
@@ -15,19 +14,15 @@ class JackAnalyzerTest < Minitest::Test
   end
 
   def test_expression_less_square
-    current_dir = File.expand_path(__dir__)
-    dir_path = File.join(current_dir, "../../../ExpressionLessSquare")
+    dir_path =dir_path("ExpressionLessSquare")
 
     JackAnalyzer.new(dir_path).execute
 
-    expected_files = Dir.glob("#{dir_path}/*.xml.expected").reject { |file| file.include?("T.xml") }
-    actual_files = Dir.glob("#{dir_path}/*.xml").reject { |file| file.include?("T.xml") }
-
-    expected_files.each_with_index do |file, index|
+    expected_files(dir_path).each_with_index do |file, index|
       expected_file_name = File.basename(file)
 
       actual_file_name = expected_file_name.gsub(".expected", "")
-      actual_file = actual_files.find { |file_path| File.basename(file_path) == actual_file_name }
+      actual_file = actual_files(dir_path).find { |file_path| File.basename(file_path) == actual_file_name }
 
       expected = File.read(file).gsub(/\s+/, "").chomp
       actual = File.read(actual_file).gsub(/\s+/, "").chomp
@@ -37,24 +32,35 @@ class JackAnalyzerTest < Minitest::Test
   end
 
   def test_square
-    current_dir = File.expand_path(__dir__)
-    dir_path = File.join(current_dir, "../../../Square")
+    dir_path = dir_path("Square")
 
     JackAnalyzer.new(dir_path).execute
 
-    expected_files = Dir.glob("#{dir_path}/*.xml.expected").reject { |file| file.include?("T.xml") }
-    actual_files = Dir.glob("#{dir_path}/*.xml").reject { |file| file.include?("T.xml") }
-
-    expected_files.each_with_index do |file, index|
+    expected_files(dir_path).each_with_index do |file, index|
       expected_file_name = File.basename(file)
 
       actual_file_name = expected_file_name.gsub(".expected", "")
-      actual_file = actual_files.find { |file_path| File.basename(file_path) == actual_file_name }
+      actual_file = actual_files(dir_path).find { |file_path| File.basename(file_path) == actual_file_name }
 
       expected = File.read(file).gsub(/\s+/, "").chomp
       actual = File.read(actual_file).gsub(/\s+/, "").chomp
 
       assert_equal expected, actual
     end
+  end
+
+  private
+  
+  def dir_path(dir_name)
+    current_dir = File.expand_path(__dir__)
+    File.join(current_dir, "../../../#{dir_name}")
+  end
+
+  def expected_files(dir_path)
+    Dir.glob("#{dir_path}/*.xml.expected").reject { |file| file.include?("T.xml") }
+  end
+
+  def actual_files(dir_path)
+    Dir.glob("#{dir_path}/*.xml").reject { |file| file.include?("T.xml") }
   end
 end
