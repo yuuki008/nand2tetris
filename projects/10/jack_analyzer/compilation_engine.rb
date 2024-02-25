@@ -5,6 +5,8 @@ class CompilationEngine
   SUBROUTINE = %w(constructor function method)
   CLASS_VAR = %w(static field)
   KEYWORD_CONSTANT = %w(true false null this)
+  STATEMENTS = %w(let if while do return)
+
   def initialize(tokenizer)
     @tokenizer = tokenizer
     @output_file = File.open(tokenizer.input_file_path.gsub('.jack', '.xml'), 'w')
@@ -70,7 +72,7 @@ class CompilationEngine
   # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
   def compile_subroutine_dec
     write_code('<subroutineDec>')
-    compile_keyword("constructor", "function", "method")
+    compile_keyword(*SUBROUTINE)
     compile_return_type
     compile_identifer
     compile_symbol("(")
@@ -87,7 +89,7 @@ class CompilationEngine
     write_code('<subroutineBody>')
     compile_symbol('{')
 
-    while token?(%w(var let if while do return))
+    while token?([*STATEMENTS, 'var'])
       if token?('var')
         compile_var_dec
       else
@@ -102,9 +104,8 @@ class CompilationEngine
   # ((type varName) (',' type varName)* )?
   def compile_parameter_list
     write_code('<parameterList>')
-    compile_symbol('(')
 
-    if token? TYPE
+    if token?(TYPE)
       compile_type
       compile_var_name
 
@@ -115,7 +116,6 @@ class CompilationEngine
       end
     end
 
-    compile_symbol(')')
     write_code('</parameterList>')
   end
 
@@ -142,7 +142,7 @@ class CompilationEngine
     when 'do'
       compile_do_statement
     when 'return'
-      compile_statement
+      compile_return_statement
     end
   end
 
@@ -187,7 +187,7 @@ class CompilationEngine
   end
 
   # 'return' expression? ';'
-  def compile_statement
+  def compile_return_statement
     write_code('<returnStatement>')
     compile_keyword('return')
     compile_expression unless token?(';')
@@ -304,7 +304,7 @@ class CompilationEngine
   # 'true' | 'false' | 'null' | 'this'
   def compile_keyword_constant
     write_code('<keywordConstant>')
-    compile_keyword('true', 'false', 'null', 'this')
+    compile_keyword(*KEYWORD_CONSTANT)
     write_code('</keywordConstant>')
   end
 
@@ -335,7 +335,7 @@ class CompilationEngine
 
   # 'int' | 'char' | 'boolean' | className
   def compile_type
-    if TYPE.include?(@tokenizer.keyword)
+    if token?(TYPE)
       compile_keyword(*TYPE)
     else
       compile_identifer
