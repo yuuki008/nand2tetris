@@ -239,7 +239,7 @@ class CompilationEngine
     elsif @tokenizer.token_type == "STRING_CONST"
       compile_string_constant
     elsif token?(KEYWORD_CONSTANT)
-      compile_keyword_constant
+      compile_keyword(*KEYWORD_CONSTANT)
     elsif @tokenizer.token_type == "IDENTIFIER" && next_token?('(')
       compile_subroutine_call
     elsif @tokenizer.token_type == "IDENTIFIER" && next_token?("[")
@@ -247,8 +247,6 @@ class CompilationEngine
       compile_symbol('[')
       compile_expression
       compile_symbol(']')
-    elsif @tokenizer.token_type == "IDENTIFIER"
-      compile_var_name
     elsif token?('(')
       compile_symbol('(')
       compile_expression
@@ -256,6 +254,8 @@ class CompilationEngine
     elsif token?(UNARY_OP)
       compile_unary_op
       compile_term
+    else @tokenizer.token_type == "IDENTIFIER"
+      compile_var_name
     end
 
     write_code('</term>')
@@ -281,9 +281,15 @@ class CompilationEngine
   # (expression (',' expression)* )?
   def compile_expression_list
     write_code('<expressionList>')
-    while @tokenizer.token != ")"
+
+    unless token?(')')
       compile_expression
+      while token?(',')
+        compile_symbol(',')
+        compile_expression
+      end
     end
+
     write_code('</expressionList>')
   end
 
@@ -299,13 +305,6 @@ class CompilationEngine
     write_code('<unaryOp>')
     compile_symbol('-', '~')
     write_code('</unaryOp>')
-  end
-
-  # 'true' | 'false' | 'null' | 'this'
-  def compile_keyword_constant
-    write_code('<keywordConstant>')
-    compile_keyword(*KEYWORD_CONSTANT)
-    write_code('</keywordConstant>')
   end
 
   private
