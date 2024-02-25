@@ -240,7 +240,7 @@ class CompilationEngine
       compile_string_constant
     elsif token?(KEYWORD_CONSTANT)
       compile_keyword(*KEYWORD_CONSTANT)
-    elsif @tokenizer.token_type == "IDENTIFIER" && next_token?('.') || next_token?('(')
+    elsif @tokenizer.token_type == "IDENTIFIER" && (next_token?('.') || next_token?('('))
       compile_subroutine_call
     elsif @tokenizer.token_type == "IDENTIFIER" && next_token?("[")
       compile_var_name
@@ -300,9 +300,7 @@ class CompilationEngine
 
   # '-' | '~'
   def compile_unary_op
-    write_code('<unaryOp>')
     compile_symbol('-', '~')
-    write_code('</unaryOp>')
   end
 
   private
