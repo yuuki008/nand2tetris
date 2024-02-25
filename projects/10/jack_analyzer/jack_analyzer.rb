@@ -1,14 +1,15 @@
 require_relative './jack_tokenizer'
+require_relative './compilation_engine'
 
 class JackAnalyzer
-  def initialize
-    print "Enter the path of the file or directory: "
-    @path = gets.chomp
+  def initialize(path)
+    @path = path
   end
 
   def execute
     jack_files.each do |file_path|
-      tokenizer = JackTokenizer.new(file_path).execute
+      tokenizer = JackTokenizer.new(file_path)
+      CompilationEngine.new(tokenizer)
     end
   end
 
@@ -24,5 +25,3 @@ class JackAnalyzer
     Dir.glob("#{dir}/*.jack")
   end
 end
-
-JackAnalyzer.new.execute
