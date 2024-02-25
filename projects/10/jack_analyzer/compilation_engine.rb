@@ -152,7 +152,7 @@ class CompilationEngine
     compile_keyword("let")
     compile_var_name
 
-    if next_token?("[")
+    if token?("[")
       compile_symbol("[")
       compile_expression
       compile_symbol("]")
@@ -295,9 +295,7 @@ class CompilationEngine
 
   # '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='
   def compile_op
-    write_code('<op>')
     compile_symbol(*OP)
-    write_code('</op>')
   end
 
   # '-' | '~'
@@ -357,7 +355,7 @@ class CompilationEngine
       raise "Expected symbol: \"#{tokens.join(', ')}\" but got \"#{@tokenizer.token}\""
     end
 
-    write_code("<symbol> #{@tokenizer.symbol} </symbol>")
+    write_code("<symbol> #{@tokenizer.escape_symbol} </symbol>")
     @tokenizer.advance
   end
 
@@ -372,7 +370,7 @@ class CompilationEngine
   end
 
   def compile_string_constant
-    write_code("<stringConstant> #{@tokenizer.string_val} </stringConstant>")
+    write_code("<stringConstant> #{@tokenizer.escape_string_val} </stringConstant>")
     @tokenizer.advance
   end
 

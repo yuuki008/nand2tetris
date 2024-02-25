@@ -82,14 +82,19 @@ class JackTokenizer
     @tokens[@index + 1]
   end
 
-  def escape_token
-    if token_type === 'SYMBOL'
-      return ESCAPED_SYMBOLS[token] || token
-    elsif token_type === 'STRING_CONST'
-      return token[1..-2]
-    else
-      return token
-    end
+  def next_next_token
+    @tokens[@index + 2]
+  end
+
+
+  def escape_string_val
+    raise 'Not a string constant' unless token_type === 'STRING_CONST'
+
+    token[1..-2]
+  end
+
+  def escape_symbol
+    ESCAPED_SYMBOLS[symbol] || symbol
   end
 
   def execute
@@ -98,15 +103,15 @@ class JackTokenizer
     while has_more_tokens?
       case token_type
       when 'KEYWORD'
-        write_code("<keyword> #{escape_token} </keyword>")
+        write_code("<keyword> #{keyword} </keyword>")
       when 'SYMBOL'
-        write_code("<symbol> #{escape_token} </symbol>")
+        write_code("<symbol> #{escape_symbol} </symbol>")
       when 'IDENTIFIER'
-        write_code("<identifier> #{escape_token} </identifier>")
+        write_code("<identifier> #{identifier} </identifier>")
       when 'INT_CONST'
-        write_code("<integerConstant> #{escape_token} </integerConstant>")
+        write_code("<integerConstant> #{int_val} </integerConstant>")
       when 'STRING_CONST'
-        write_code("<stringConstant> #{escape_token} </stringConstant>")
+        write_code("<stringConstant> #{escape_string_val} </stringConstant>")
       end
 
       advance()
