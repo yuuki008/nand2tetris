@@ -14,7 +14,7 @@ class JackAnalyzerTest < Minitest::Test
   end
 
   def test_expression_less_square
-    dir_path =dir_path("ExpressionLessSquare")
+    dir_path = dir_path("ExpressionLessSquare")
 
     JackAnalyzer.new(dir_path).execute
 
