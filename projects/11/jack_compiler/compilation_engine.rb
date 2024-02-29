@@ -64,14 +64,17 @@ class CompilationEngine
     compile_keyword('var')
     type = compile_type
     compile_var_name(declaration: true, type: type, kind: 'var')
-
+    
+    var_count = 1
     while token?(',')
       compile_symbol(',')
       compile_var_name(declaration: true, type: type, kind: 'var')
+      var_count += 1
     end
 
     compile_symbol(';')
     write_code('</varDec>')
+    var_count
   end
 
   # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
@@ -86,30 +89,27 @@ class CompilationEngine
 
     compile_symbol(')')
 
-    var_count = compile_subroutine_body
-    @vm_writer.write_function("#{@class_name}.#{function_name}", var_count)
+    var_count = compile_subroutine_body(function_name)
     write_code('</subroutineDec>')
   end
 
   # '{' varDec* statements '}
-  def compile_subroutine_body
+  def compile_subroutine_body(function_name)
     write_code('<subroutineBody>')
     compile_symbol('{')
 
     var_count = 0
-    while token?([*STATEMENTS, 'var'])
-      if token?('var')
-        var_count += 1
-        compile_var_dec
-      else
-        compile_statements
-      end
+    while token?('var')
+      var_count += compile_var_dec
     end
+
+    # 関数定義
+    @vm_writer.write_function("#{@class_name}.#{function_name}", var_count)
+
+    compile_statements
 
     compile_symbol('}')
     write_code('</subroutineBody>')
-
-    var_count
   end
 
   # ((type varName) (',' type varName)* )?
@@ -234,8 +234,9 @@ class CompilationEngine
     compile_term
 
     while token?(OP)
-      compile_op
+      op = compile_op
       compile_term
+      @vm_writer.write_arithmetic(op)
     end
 
     write_code('</expression>')
@@ -246,7 +247,8 @@ class CompilationEngine
     write_code('<term>')
     
     if @tokenizer.token_type == "INT_CONST"
-      compile_integer_constant
+      int_val = compile_integer_constant
+      @vm_writer.write_push('constant', int_val)
     elsif @tokenizer.token_type == "STRING_CONST"
       compile_string_constant
     elsif token?(KEYWORD_CONSTANT)
@@ -274,34 +276,43 @@ class CompilationEngine
 
   # subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName '(' expressionList ')'
   def compile_subroutine_call
+    subroutine_name = ""
+    n_args = 0
     if next_token?('(') 
-      compile_subroutine_name
+      subroutine_name = compile_subroutine_name
       compile_symbol('(')
-      compile_expression_list
+      n_args = compile_expression_list
       compile_symbol(')')
     else
-      compile_class_name
+      class_name = compile_class_name
       compile_symbol('.')
-      compile_subroutine_name
+      subroutine_name = "#{class_name}.#{compile_subroutine_name}"
       compile_symbol('(')
-      compile_expression_list
+      n_args = compile_expression_list
       compile_symbol(')')
     end
+
+    # 関数呼び出し
+    @vm_writer.write_call(subroutine_name, n_args)
   end
 
   # (expression (',' expression)* )?
   def compile_expression_list
     write_code('<expressionList>')
 
+    n_args = 0
     unless token?(')')
       compile_expression
+      n_args += 1
       while token?(',')
         compile_symbol(',')
         compile_expression
+        n_args += 1
       end
     end
 
     write_code('</expressionList>')
+    n_args
   end
 
   # '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '='

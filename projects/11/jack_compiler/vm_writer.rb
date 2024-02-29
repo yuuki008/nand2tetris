@@ -11,8 +11,15 @@ class VmWriter
     @output_file.puts("pop #{segment} #{index}")
   end
 
-  def write_arithmetic(command)
-    @output_file.puts(command)
+  def write_arithmetic(op)
+    case op
+    when '+'
+      @output_file.puts("add")
+    when '-'
+      @output_file.puts("sub")
+    when '*'
+      @output_file.puts("call Math.multiply 2")
+    end
   end
 
   def write_label(label)
