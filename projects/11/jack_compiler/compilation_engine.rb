@@ -201,7 +201,14 @@ class CompilationEngine
   def compile_return_statement
     write_code('<returnStatement>')
     compile_keyword('return')
-    compile_expression unless token?(';')
+    if token?(';')
+      @vm_writer.write_pop('temp', 0)
+      @vm_writer.write_push('constant', 0)
+    else
+      compile_expression
+    end
+
+    @vm_writer.write_return
     compile_symbol(';')
     write_code('</returnStatement>')
   end
