@@ -1,7 +1,7 @@
 require_relative './jack_tokenizer'
 require_relative './compilation_engine'
 
-class JackAnalyzer
+class JackCompiler
   def initialize(path)
     @path = path
   end

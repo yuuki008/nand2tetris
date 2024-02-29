@@ -1,3 +1,5 @@
+require_relative './symbol_table'
+
 class CompilationEngine
   UNARY_OP = %w(- ~)
   OP = %w(+ - * / & | < > =)
@@ -9,6 +11,7 @@ class CompilationEngine
 
   def initialize(tokenizer)
     @tokenizer = tokenizer
+    @symbol_table = SymbolTable.new
     @output_file = File.open(tokenizer.input_file_path.gsub('.jack', '.xml'), 'w')
     
     compile_class
@@ -35,7 +38,7 @@ class CompilationEngine
   def compile_class
     write_code('<class>')
     compile_keyword('class')
-    compile_identifer
+    compile_class_name
     compile_symbol('{')
 
     compile_class_var_dec while next_class_var_dec?
@@ -74,7 +77,7 @@ class CompilationEngine
     write_code('<subroutineDec>')
     compile_keyword(*SUBROUTINE)
     compile_return_type
-    compile_identifer
+    compile_subroutine_name
     compile_symbol("(")
 
     compile_parameter_list
@@ -269,7 +272,7 @@ class CompilationEngine
       compile_expression_list
       compile_symbol(')')
     else
-      compile_identifer
+      compile_class_name
       compile_symbol('.')
       compile_subroutine_name
       compile_symbol('(')
@@ -307,11 +310,13 @@ class CompilationEngine
 
   # identifier
   def compile_class_name
+    write_code("<IdentifierInfo> category: class </IdentifierInfo>")
     compile_identifer
   end
 
   # identifier
   def compile_subroutine_name
+    write_code("<IdentifierInfo> category: subroutine </IdentifierInfo>")
     compile_identifer
   end
 
@@ -337,15 +342,17 @@ class CompilationEngine
     end
   end
 
-
   # 終端記号
   def compile_keyword(*tokens)
     unless tokens.include?(@tokenizer.token)
       raise "Expected keyword: \"#{tokens.join(', ')}\" but got \"#{@tokenizer.token}\""
     end
 
-    write_code("<keyword> #{@tokenizer.keyword} </keyword>")
+    keyword = @tokenizer.keyword
+    write_code("<keyword> #{keyword} </keyword>")
     @tokenizer.advance
+
+    keyword
   end
 
   def compile_symbol(*tokens)
@@ -353,23 +360,37 @@ class CompilationEngine
       raise "Expected symbol: \"#{tokens.join(', ')}\" but got \"#{@tokenizer.token}\""
     end
 
-    write_code("<symbol> #{@tokenizer.escape_symbol} </symbol>")
+    escape_symbol = @tokenizer.escape_symbol
+    write_code("<symbol> #{escape_symbol} </symbol>")
     @tokenizer.advance
+
+    escape_symbol
   end
 
   def compile_identifer
-    write_code("<identifier> #{@tokenizer.identifier} </identifier>")
+
+    identifer = @tokenizer.identifier
+    write_code("<identifier> #{identifer} </identifier>")
     @tokenizer.advance
+
+    identifer
   end
 
   def compile_integer_constant
-    write_code("<integerConstant> #{@tokenizer.int_val} </integerConstant>")
+
+    int_val = @tokenizer.int_val
+    write_code("<integerConstant> #{int_val} </integerConstant>")
     @tokenizer.advance
+
+    int_val
   end
 
   def compile_string_constant
-    write_code("<stringConstant> #{@tokenizer.escape_string_val} </stringConstant>")
+    escape_string_val = @tokenizer.escape_string_val
+    write_code("<stringConstant> #{escape_string_val} </stringConstant>")
     @tokenizer.advance
+
+    escape_string_val
   end
 
   def write_code(code)
