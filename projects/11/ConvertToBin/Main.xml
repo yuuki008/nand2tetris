@@ -17,7 +17,7 @@
 <varDec>
 <keyword> var </keyword>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: var, index:  0 </IdentifierInfo>
 <identifier> value </identifier>
 <symbol> ; </symbol>
 </varDec>
@@ -57,7 +57,7 @@
 </doStatement>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  0 </IdentifierInfo>
 <identifier> value </identifier>
 <symbol> = </symbol>
 <expression>
@@ -91,7 +91,7 @@
 <expressionList>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  0 </IdentifierInfo>
 <identifier> value </identifier>
 </term>
 </expression>
@@ -115,7 +115,7 @@
 <symbol> ( </symbol>
 <parameterList>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 2, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: arg, index:  1 </IdentifierInfo>
 <identifier> value </identifier>
 </parameterList>
 <symbol> ) </symbol>
@@ -124,24 +124,24 @@
 <varDec>
 <keyword> var </keyword>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: var, index:  1 </IdentifierInfo>
 <identifier> mask </identifier>
 <symbol> , </symbol>
-<IdentifierInfo> declaration: True, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 <symbol> ; </symbol>
 </varDec>
 <varDec>
 <keyword> var </keyword>
 <keyword> boolean </keyword>
-<IdentifierInfo> declaration: True, kind: 3, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: var, index:  3 </IdentifierInfo>
 <identifier> loop </identifier>
 <symbol> ; </symbol>
 </varDec>
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 3, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  3 </IdentifierInfo>
 <identifier> loop </identifier>
 <symbol> = </symbol>
 <expression>
@@ -156,7 +156,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  3 </IdentifierInfo>
 <identifier> loop </identifier>
 </term>
 </expression>
@@ -165,12 +165,12 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 <symbol> = </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 </term>
 <symbol> + </symbol>
@@ -182,7 +182,7 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  1 </IdentifierInfo>
 <identifier> mask </identifier>
 <symbol> = </symbol>
 <expression>
@@ -196,7 +196,7 @@
 <expressionList>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  1 </IdentifierInfo>
 <identifier> mask </identifier>
 </term>
 </expression>
@@ -216,7 +216,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 </term>
 <symbol> &gt; </symbol>
@@ -244,12 +244,12 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  1 </IdentifierInfo>
 <identifier> value </identifier>
 </term>
 <symbol> &amp; </symbol>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  1 </IdentifierInfo>
 <identifier> mask </identifier>
 </term>
 </expression>
@@ -282,7 +282,7 @@
 </term>
 <symbol> + </symbol>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 </term>
 </expression>
@@ -316,7 +316,7 @@
 </term>
 <symbol> + </symbol>
 <term>
-<IdentifierInfo> declaration: False, kind: 3, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  2 </IdentifierInfo>
 <identifier> position </identifier>
 </term>
 </expression>
@@ -340,7 +340,7 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 3, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: var, index:  3 </IdentifierInfo>
 <identifier> loop </identifier>
 <symbol> = </symbol>
 <expression>
@@ -372,7 +372,7 @@
 <symbol> ( </symbol>
 <parameterList>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 2, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: arg, index:  4 </IdentifierInfo>
 <identifier> mask </identifier>
 </parameterList>
 <symbol> ) </symbol>
@@ -384,7 +384,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  4 </IdentifierInfo>
 <identifier> mask </identifier>
 </term>
 <symbol> = </symbol>
@@ -413,7 +413,7 @@
 <keyword> return </keyword>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  4 </IdentifierInfo>
 <identifier> mask </identifier>
 </term>
 <symbol> * </symbol>
@@ -438,15 +438,15 @@
 <symbol> ( </symbol>
 <parameterList>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 2, index: 0 </IdentifierInfo>
-<identifier> startAddress </identifier>
+<IdentifierInfo> declaration: True, kind: arg, index:  4 </IdentifierInfo>
+<identifier> address </identifier>
 <symbol> , </symbol>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 2, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: arg, index:  5 </IdentifierInfo>
 <identifier> length </identifier>
 <symbol> , </symbol>
 <keyword> int </keyword>
-<IdentifierInfo> declaration: True, kind: 2, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: True, kind: arg, index:  6 </IdentifierInfo>
 <identifier> value </identifier>
 </parameterList>
 <symbol> ) </symbol>
@@ -458,7 +458,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  5 </IdentifierInfo>
 <identifier> length </identifier>
 </term>
 <symbol> &gt; </symbol>
@@ -480,14 +480,14 @@
 <expressionList>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
-<identifier> startAddress </identifier>
+<IdentifierInfo> declaration: False, kind: arg, index:  4 </IdentifierInfo>
+<identifier> address </identifier>
 </term>
 </expression>
 <symbol> , </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 2 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  6 </IdentifierInfo>
 <identifier> value </identifier>
 </term>
 </expression>
@@ -497,12 +497,12 @@
 </doStatement>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 2, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  5 </IdentifierInfo>
 <identifier> length </identifier>
 <symbol> = </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 1 </IdentifierInfo>
+<IdentifierInfo> declaration: False, kind: arg, index:  5 </IdentifierInfo>
 <identifier> length </identifier>
 </term>
 <symbol> - </symbol>
@@ -514,13 +514,13 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
-<identifier> startAddress </identifier>
+<IdentifierInfo> declaration: False, kind: arg, index:  4 </IdentifierInfo>
+<identifier> address </identifier>
 <symbol> = </symbol>
 <expression>
 <term>
-<IdentifierInfo> declaration: False, kind: 2, index: 0 </IdentifierInfo>
-<identifier> startAddress </identifier>
+<IdentifierInfo> declaration: False, kind: arg, index:  4 </IdentifierInfo>
+<identifier> address </identifier>
 </term>
 <symbol> + </symbol>
 <term>

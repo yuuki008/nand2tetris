@@ -21,9 +21,9 @@ class CompilationEngine
   # ('static' | 'field') type varName (',' varName)* ';'
   def compile_class_var_dec
     write_code('<classVarDec>')
-    compile_keyword('static', 'field')
-    compile_type
-    compile_identifer
+    keyword = compile_keyword('static', 'field')
+    type = compile_type
+    compile_var_name(declaration: true, type: type, kind: keyword)
 
     while token?(',')
       compile_symbol(',')
@@ -60,12 +60,12 @@ class CompilationEngine
   def compile_var_dec
     write_code('<varDec>')
     compile_keyword('var')
-    compile_type
-    compile_identifer
+    type = compile_type
+    compile_var_name(declaration: true, type: type, kind: 'var')
 
     while token?(',')
       compile_symbol(',')
-      compile_identifer
+      compile_var_name(declaration: true, type: type, kind: 'var')
     end
 
     compile_symbol(';')
@@ -109,13 +109,13 @@ class CompilationEngine
     write_code('<parameterList>')
 
     if token?(TYPE)
-      compile_type
-      compile_var_name
+      type = compile_type
+      compile_var_name(declaration: true, type: type, kind:'arg')
 
       while token?(',')
         compile_symbol(',')
         compile_type
-        compile_var_name
+        compile_var_name(declaration: true, type: type, kind: 'arg')
       end
     end
 
@@ -153,7 +153,7 @@ class CompilationEngine
   def compile_let_statement
     write_code('<letStatement>')
     compile_keyword("let")
-    compile_var_name
+    compile_var_name(declaration: false, type: nil, kind: nil)
 
     if token?("[")
       compile_symbol("[")
@@ -246,7 +246,7 @@ class CompilationEngine
     elsif @tokenizer.token_type == "IDENTIFIER" && (next_token?('.') || next_token?('('))
       compile_subroutine_call
     elsif @tokenizer.token_type == "IDENTIFIER" && next_token?("[")
-      compile_var_name
+      compile_var_name(declaration: false, type: nil, kind: nil)
       compile_symbol('[')
       compile_expression
       compile_symbol(']')
@@ -258,7 +258,7 @@ class CompilationEngine
       compile_unary_op
       compile_term
     else @tokenizer.token_type == "IDENTIFIER"
-      compile_var_name
+      compile_var_name(declaration: false, type: nil, kind: nil)
     end
 
     write_code('</term>')
@@ -321,7 +321,14 @@ class CompilationEngine
   end
 
   # identifier
-  def compile_var_name
+  def compile_var_name(declaration: false, type: nil, kind: nil)
+    if declaration
+      @symbol_table.define(@tokenizer.identifier, type, kind)
+    end
+
+    kind = @symbol_table.kind_of(@tokenizer.identifier)
+    index = @symbol_table.index_of(@tokenizer.identifier)
+    write_code("<IdentifierInfo> declaration: #{declaration ? "True" : "False"}, kind: #{kind}, index:  #{index} </IdentifierInfo>")
     compile_identifer
   end
 
@@ -377,7 +384,6 @@ class CompilationEngine
   end
 
   def compile_integer_constant
-
     int_val = @tokenizer.int_val
     write_code("<integerConstant> #{int_val} </integerConstant>")
     @tokenizer.advance

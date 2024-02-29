@@ -1,4 +1,5 @@
 class SymbolTable
+  KINDS = %w[static field arg var]
   def initialize
     @class_table = {}
     @subroutine_table = {}
@@ -9,6 +10,10 @@ class SymbolTable
   end
 
   def define(name, type, kind)
+    unless KINDS.include?(kind)
+      raise "Invalid kind: #{kind}"
+    end
+
     if kind == "static" || kind == "field"
       @class_table[name] = { type: type, kind: kind, index: @class_table.keys.count }
     else
