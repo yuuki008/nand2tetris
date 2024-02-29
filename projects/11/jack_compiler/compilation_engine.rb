@@ -1,4 +1,5 @@
 require_relative './symbol_table'
+require_relative './vm_writer'
 
 class CompilationEngine
   UNARY_OP = %w(- ~)
@@ -12,6 +13,7 @@ class CompilationEngine
   def initialize(tokenizer)
     @tokenizer = tokenizer
     @symbol_table = SymbolTable.new
+    @vm_writer = VmWriter.new(tokenizer.input_file_path.gsub('.jack', '.vm'))
     @output_file = File.open(tokenizer.input_file_path.gsub('.jack', '.xml'), 'w')
     
     compile_class
@@ -38,7 +40,7 @@ class CompilationEngine
   def compile_class
     write_code('<class>')
     compile_keyword('class')
-    compile_class_name
+    @class_name = compile_class_name
     compile_symbol('{')
 
     compile_class_var_dec while next_class_var_dec?
@@ -77,13 +79,15 @@ class CompilationEngine
     write_code('<subroutineDec>')
     compile_keyword(*SUBROUTINE)
     compile_return_type
-    compile_subroutine_name
+    function_name = compile_subroutine_name
     compile_symbol("(")
 
     compile_parameter_list
 
     compile_symbol(')')
-    compile_subroutine_body
+
+    var_count = compile_subroutine_body
+    @vm_writer.write_function("#{@class_name}.#{function_name}", var_count)
     write_code('</subroutineDec>')
   end
 
@@ -92,8 +96,10 @@ class CompilationEngine
     write_code('<subroutineBody>')
     compile_symbol('{')
 
+    var_count = 0
     while token?([*STATEMENTS, 'var'])
       if token?('var')
+        var_count += 1
         compile_var_dec
       else
         compile_statements
@@ -102,6 +108,8 @@ class CompilationEngine
 
     compile_symbol('}')
     write_code('</subroutineBody>')
+
+    var_count
   end
 
   # ((type varName) (',' type varName)* )?
