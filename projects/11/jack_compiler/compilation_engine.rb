@@ -1,9 +1,31 @@
 require_relative './symbol_table'
 require_relative './vm_writer'
+require 'debug'
 
 class CompilationEngine
-  UNARY_OP = %w(- ~)
   OP = %w(+ - * / & | < > =)
+  OP_COMMAND = {
+    "+" => "ADD",
+    "-" => "SUB",
+    "*" => "CALL Math.multiply 2",
+    "/" => "CALL Math.divide 2",
+    "&" => "AND",
+    "|" => "OR",
+    "<" => "LT",
+    ">" => "GT",
+    "=" => "EQ"
+  }
+  UNARY_OP = %w(- ~)
+  UNARY_OP_COMMAND = {
+    "-" => "NEG",
+    "~" => "NOT"
+  }
+  KIND_SEGMENT = {
+    "ARG" => "ARG",
+    "VAR" => "LOCAL",
+    "STATIC" => "STATIC",
+    "FIELD" => "THIS",
+  }
   TYPE = %w(int char boolean)
   SUBROUTINE = %w(constructor function method)
   CLASS_VAR = %w(static field)
@@ -15,7 +37,7 @@ class CompilationEngine
     @symbol_table = SymbolTable.new
     @vm_writer = VmWriter.new(tokenizer.input_file_path.gsub('.jack', '.vm'))
     @output_file = File.open(tokenizer.input_file_path.gsub('.jack', '.xml'), 'w')
-    
+    @label_id = 1
     compile_class
     @output_file.close
   end
@@ -63,12 +85,12 @@ class CompilationEngine
     write_code('<varDec>')
     compile_keyword('var')
     type = compile_type
-    compile_var_name(declaration: true, type: type, kind: 'var')
+    compile_var_name(declaration: true, type: type, kind: "VAR")
     
     var_count = 1
     while token?(',')
       compile_symbol(',')
-      compile_var_name(declaration: true, type: type, kind: 'var')
+      compile_var_name(declaration: true, type: type, kind: "VAR")
       var_count += 1
     end
 
@@ -79,6 +101,7 @@ class CompilationEngine
 
   # ('constructor' | 'function' | 'method') ('void' | type) subroutineName '(' parameterList ')' subroutineBody
   def compile_subroutine_dec
+    @symbol_table.start_subroutine
     write_code('<subroutineDec>')
     compile_keyword(*SUBROUTINE)
     compile_return_type
@@ -89,7 +112,7 @@ class CompilationEngine
 
     compile_symbol(')')
 
-    var_count = compile_subroutine_body(function_name)
+    compile_subroutine_body(function_name)
     write_code('</subroutineDec>')
   end
 
@@ -118,12 +141,12 @@ class CompilationEngine
 
     if token?(TYPE)
       type = compile_type
-      compile_var_name(declaration: true, type: type, kind:'arg')
+      compile_var_name(declaration: true, type: type, kind:'ARG')
 
       while token?(',')
         compile_symbol(',')
         compile_type
-        compile_var_name(declaration: true, type: type, kind: 'arg')
+        compile_var_name(declaration: true, type: type, kind: 'ARG')
       end
     end
 
@@ -144,15 +167,15 @@ class CompilationEngine
   # letStatement | ifStatement | whileStatement | doStatement | returnStatement
   def compile_statement
     case @tokenizer.keyword
-    when 'let'
+    when 'LET'
       compile_let_statement
-    when 'if'
+    when 'IF'
       compile_if_statement
-    when 'while'
+    when 'WHILE'
       compile_while_statement
-    when 'do'
+    when 'DO'
       compile_do_statement
-    when 'return'
+    when 'RETURN'
       compile_return_statement
     end
   end
@@ -161,17 +184,20 @@ class CompilationEngine
   def compile_let_statement
     write_code('<letStatement>')
     compile_keyword("let")
-    compile_var_name(declaration: false, type: nil, kind: nil)
-
+    identifer = compile_var_name(declaration: false, type: nil, kind: nil)
+    
     if token?("[")
       compile_symbol("[")
       compile_expression
       compile_symbol("]")
     end
-
+    
     compile_symbol("=")
     compile_expression
     compile_symbol(";")
+    index = @symbol_table.index_of(identifer)
+    kind = @symbol_table.kind_of(identifer)
+    @vm_writer.write_pop(KIND_SEGMENT[kind], index)
     write_code('</letStatement>')
   end
 
@@ -182,19 +208,32 @@ class CompilationEngine
     compile_subroutine_call
     compile_symbol(';')
     write_code('</doStatement>')
+
+    @vm_writer.write_pop('TEMP', 0)
   end
 
   # 'while' '(' expression ')' '{' statements '}'
   def compile_while_statement
+    while_true_label = "LABEL_#{@label_id}" 
+    @label_id += 1
+    while_false_label = "LABEL_#{@label_id}"
+    @label_id += 1
+    @vm_writer.write_label(while_true_label)
+    
     write_code('<whileStatement>')
     compile_keyword('while')
     compile_symbol('(')
     compile_expression
     compile_symbol(')')
+
+    @vm_writer.write_arithmetic('NOT')
+    @vm_writer.write_if(while_false_label)
+
     compile_symbol('{')
     compile_statements
     compile_symbol('}')
     write_code('</whileStatement>')
+    @vm_writer.write_label(while_false_label)
   end
 
   # 'return' expression? ';'
@@ -202,8 +241,7 @@ class CompilationEngine
     write_code('<returnStatement>')
     compile_keyword('return')
     if token?(';')
-      @vm_writer.write_pop('temp', 0)
-      @vm_writer.write_push('constant', 0)
+      @vm_writer.write_push('CONST', 0)
     else
       compile_expression
     end
@@ -215,7 +253,6 @@ class CompilationEngine
 
   # 'if' '(' expression ')' '{' statements '}' ( 'else' '{' statements '}' )?
   def compile_if_statement
-    write_code('<ifStatement>')
     compile_keyword('if')
     compile_symbol('(')
     compile_expression
@@ -243,7 +280,7 @@ class CompilationEngine
     while token?(OP)
       op = compile_op
       compile_term
-      @vm_writer.write_arithmetic(op)
+      @vm_writer.write_arithmetic(OP_COMMAND[op])
     end
 
     write_code('</expression>')
@@ -255,11 +292,11 @@ class CompilationEngine
     
     if @tokenizer.token_type == "INT_CONST"
       int_val = compile_integer_constant
-      @vm_writer.write_push('constant', int_val)
+      @vm_writer.write_push('CONST', int_val)
     elsif @tokenizer.token_type == "STRING_CONST"
       compile_string_constant
     elsif token?(KEYWORD_CONSTANT)
-      compile_keyword(*KEYWORD_CONSTANT)
+      compile_keyword_constant
     elsif @tokenizer.token_type == "IDENTIFIER" && (next_token?('.') || next_token?('('))
       compile_subroutine_call
     elsif @tokenizer.token_type == "IDENTIFIER" && next_token?("[")
@@ -272,13 +309,28 @@ class CompilationEngine
       compile_expression
       compile_symbol(')')
     elsif token?(UNARY_OP)
-      compile_unary_op
+      op = compile_unary_op
       compile_term
+      @vm_writer.write_arithmetic(UNARY_OP_COMMAND[op])
     else @tokenizer.token_type == "IDENTIFIER"
-      compile_var_name(declaration: false, type: nil, kind: nil)
+      identifer = compile_var_name(declaration: false, type: nil, kind: nil)
+
+      index = @symbol_table.index_of(identifer)
+      kind = @symbol_table.kind_of(identifer)
+      @vm_writer.write_push(KIND_SEGMENT[kind], index)
     end
 
     write_code('</term>')
+  end
+
+  def compile_keyword_constant
+    keyword_constant = compile_keyword(*KEYWORD_CONSTANT)
+    @vm_writer.write_push('CONST', 0)
+    case keyword_constant
+    when 'TRUE'
+      @vm_writer.write_arithmetic('NOT')
+    when 'FALSE', 'NULL'
+    end
   end
 
   # subroutineName '(' expressionList ')' | (className | varName) '.' subroutineName '(' expressionList ')'

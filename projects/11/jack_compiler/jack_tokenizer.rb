@@ -147,7 +147,7 @@ class JackTokenizer
   def keyword
     raise 'Not a keyword' unless token_type === 'KEYWORD'
 
-    token
+    KEYWORDS[token]
   end
 
   def symbol
